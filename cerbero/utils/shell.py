@@ -108,7 +108,7 @@ def _fix_mingw_cmd(path):
     return ''.join(l_path)
 
 
-def call(cmd, cmd_dir='.', fail=True, verbose=False):
+def call(cmd, cmd_dir='.', unset_env=[], fail=True, verbose=False):
     '''
     Run a shell command
 
@@ -143,10 +143,13 @@ def call(cmd, cmd_dir='.', fail=True, verbose=False):
             m.error("cd %s && %s && cd %s" % (cmd_dir, cmd, os.getcwd()))
             ret = 0
         else:
+            call_env = os.environ.copy()
+            for key in unset_env:
+                call_env.pop(key, None)
             ret = subprocess.check_call(cmd, cwd=cmd_dir,
                                        stderr=subprocess.STDOUT,
                                        stdout=StdOut(stream),
-                                       env=os.environ.copy(), shell=shell)
+                                       env=call_env, shell=shell)
     except subprocess.CalledProcessError:
         if fail:
             raise FatalError(_("Error running command: %s") % cmd)

@@ -402,7 +402,17 @@ class Meson (MakefilesBase):
                    'libdir': libdir,
                    'default-library': self.default_library}
         shell_cmd = self.configure_tpl % options
-        shell.call(shell_cmd, self.make_dir)
+        # With LD_LIBRARY_PATH, Meson and Ninja pick up the Cerbero libraries
+        # which can sometimes cause a segfault at weird times
+        shell.call(shell_cmd, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
+
+    @modify_environment
+    def compile(self):
+        shell.call(self.make, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
+
+    @modify_environment
+    def install(self):
+        shell.call(self.make_install, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
 
 
 class BuildType (object):
