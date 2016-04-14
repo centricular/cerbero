@@ -76,6 +76,20 @@ class CustomBuild(Build):
         pass
 
 
+def write_meson_cross_file(tpl, config, cross_file):
+    contents = tpl.format(system=config.target_platform,
+                          cpu=config.target_arch,
+                          # Assume all ARM sub-archs are in little endian mode
+                          endian='little',
+                          # If the variable is not set, we assume we want MSVC
+                          CC=os.environ.get('CC', 'cl.exe'),
+                          CXX=os.environ.get('CXX', 'cl.exe'),
+                          AR=os.environ.get('AR', 'lib.exe'),
+                          # strip is not used on MSVC
+                          STRIP=os.environ.get('STRIP', ''))
+    with open(cross_file, 'w') as f:
+        f.write(contents)
+
 def modify_environment(func):
     ''' Decorator to modify the build environment '''
     def call(*args):
@@ -355,6 +369,25 @@ class CMake (MakefilesBase):
         MakefilesBase.configure(self)
 
 
+# Keep [binaries] as the last section
+MESON_CROSS_FILE_TPL = \
+'''
+[host_machine]
+system = '{system}'
+cpu_family = '{cpu}'
+cpu = '{cpu}'
+endian = '{endian}'
+
+[properties]
+
+[binaries]
+c = '{CC}'
+cpp = '{CXX}'
+ar = '{AR}'
+strip = '{STRIP}'
+pkgconfig = 'pkg-config'
+'''
+
 # We derive from MakefilesBase even though we don't use make
 # because we use the same overall structure
 class Meson (MakefilesBase):
@@ -399,6 +432,10 @@ class Meson (MakefilesBase):
                    'libdir': libdir,
                    'default-library': self.default_library}
         shell_cmd = self.configure_tpl % options
+        if self.config.cross_compiling():
+            cross_file = os.path.join(self.make_dir, 'meson-cross-file.txt')
+            write_meson_cross_file(MESON_CROSS_FILE_TPL, self.config, cross_file)
+            shell_cmd += ' --cross-file=' + cross_file
         # With LD_LIBRARY_PATH, Meson and Ninja pick up the Cerbero libraries
         # which can sometimes cause a segfault at weird times
         shell.call(shell_cmd, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
