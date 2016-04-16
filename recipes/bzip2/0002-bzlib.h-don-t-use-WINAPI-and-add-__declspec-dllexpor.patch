@@ -1,0 +1,41 @@
+From 38caff34cf12b2e43a89fc4fd6940690c105ec14 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Fri, 15 Apr 2016 11:24:29 +0100
+Subject: [PATCH 1/2] bzlib.h: don't use WINAPI and add
+ __declspec(dllexport/dllimport)
+
+windows.h does #define WINAPI __stdcall but we want
+the __cdecl ABI. Causes linking problems on 32-bit
+windows otherwise when consumed by MSVC.
+
+Also sprinkle explicit dllexport/dllimport which will be
+needed if compiled with MSVC (mingw exports all symbols
+by default, but MSVC doesn't).
+---
+ bzlib.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/bzlib.h b/bzlib.h
+index 8277123..219a94f 100644
+--- a/bzlib.h
++++ b/bzlib.h
+@@ -82,12 +82,12 @@ typedef
+ #      undef small
+ #   endif
+ #   ifdef BZ_EXPORT
+-#   define BZ_API(func) WINAPI func
+-#   define BZ_EXTERN extern
++#   define BZ_API(func) func
++#   define BZ_EXTERN __declspec(dllexport) extern
+ #   else
+    /* import windows dll dynamically */
+-#   define BZ_API(func) (WINAPI * func)
+-#   define BZ_EXTERN
++#   define BZ_API(func) ( * func)
++#   define BZ_EXTERN __declspec(dllimport) extern
+ #   endif
+ #else
+ #   define BZ_API(func) func
+-- 
+2.8.0.rc3
+

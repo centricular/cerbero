@@ -1,0 +1,104 @@
+From b81d7e0dbd64945017082283b04ae4b5bb5d7ee3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Fri, 15 Apr 2016 11:26:43 +0100
+Subject: [PATCH 2/2] meson: add meson build for bz2
+
+---
+ meson.build | 85 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+ create mode 100644 meson.build
+
+diff --git a/meson.build b/meson.build
+new file mode 100644
+index 0000000..106885a
+--- /dev/null
++++ b/meson.build
+@@ -0,0 +1,85 @@
++project('bzip2', 'c', version : '1.0.6')
++
++# FIXME:
++# Can you fix the WINAPI thing to use __declspec(dllimport)/export
++# And also note its usage of BZ_IMPORT (you need to define that while importing bzlib.h)
++# Should get rid of that in favour of some config.h-esque thing similar to how orc uses ORC_EXPORTS
++# <windows.h> does #define WINAPI __stdcall
++
++bzip2_sources = [
++  'blocksort.c',
++  'huffman.c',
++  'crctable.c',
++  'randtable.c',
++  'compress.c',
++  'decompress.c',
++  'bzlib.c'
++]
++
++libversion = meson.project_version()
++soversion = '1.0'
++
++bz2_c_args = [ '-D_FILE_OFFSET_BITS=64' ]
++
++cc = meson.get_compiler('c')
++if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
++  # bzip2.c:557: warning: variable nread set but not used
++  bz2_c_args += ['-Wno-unused-but-set-variable']
++endif
++
++bz2_incs = include_directories('.')
++
++install_headers(['bzlib.h'])
++
++libtype = 'both' # FIXME: make option
++
++if libtype != 'shared'
++  libbz2_shared = shared_library('bz2', bzip2_sources,
++    version : libversion,
++    soversion : soversion,
++    c_args : bz2_c_args,
++    include_directories : bz2_incs,
++    install : true,
++#    dependencies : mathlib,
++#    vs_module_defs: vs_module_defs_dir + 'libbz2.def',
++  )
++  libbz2 = libbz2_shared
++endif
++
++if libtype != 'static'
++  libbz2_static = static_library('bz2', bzip2_sources,
++    c_args : bz2_c_args,
++    include_directories : bz2_incs,
++    install : true,
++#    dependencies : mathlib,
++  )
++  libbz2 = libbz2_static
++endif
++
++bz2_dep = declare_dependency(link_with : libbz2, include_directories : bz2_incs)
++
++executable('bzip2', 'bzip2.c',
++  install : true,
++  dependencies : bz2_dep,
++  c_args: bz2_c_args)
++
++executable('bunzip2', 'bzip2.c',
++  install : true,
++  dependencies : bz2_dep,
++  c_args: bz2_c_args)
++
++executable('bzcat', 'bzip2.c',
++  install : true,
++  dependencies : bz2_dep,
++  c_args: bz2_c_args)
++
++executable('bzip2recover', 'bzip2recover.c',
++  install : true,
++  c_args: bz2_c_args)
++
++install_man('bzdiff.1', 'bzgrep.1', 'bzip2.1', 'bzmore.1')
++
++# FIXME: need to chmod +x those after install (or maybe just do that in source)
++#install_data('bzgrep', 'bzmore', 'bzdiff', install_dir : 'bin')
++
++# FIXME: build docs
+-- 
+2.8.0.rc3
+
