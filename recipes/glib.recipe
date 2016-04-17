@@ -21,12 +21,14 @@ GLIB_CONFIG_UNVERSAL='''\
 class Recipe(recipe.Recipe):
     name = 'glib'
     version = '2.48.1'
-    stype = SourceType.TARBALL
-    url = 'http://ftp.acc.umu.se/pub/GNOME/sources/glib/2.48/glib-%(version)s.tar.xz'
+    #stype = SourceType.TARBALL
+    stype = SourceType.GIT
+    btype = BuildType.MESON
+    #url = 'http://ftp.acc.umu.se/pub/GNOME/sources/glib/2.46/glib-%(version)s.tar.xz'
+    remotes = {'centricular': 'https://github.com/centricular/{0}.git'.format(name)}
+    commit = 'centricular/meson'
     licenses = [License.LGPLv2Plus]
-    config_sh = 'sh autogen.sh'
-    configure_options = '--with-pcre=internal'
-    deps = ['libffi', 'zlib']
+    deps = ['libffi', 'zlib', 'gettext', 'libiconv']
     can_use_configure_cache = False
     patches = ["glib/0001-Let-user-disable-Cocoa-and-Carbon-support-on-demand.patch",
                "glib/0002-Optionally-revert-to-the-old-pre-2.28-URI-handler-co.patch",
@@ -36,7 +38,7 @@ class Recipe(recipe.Recipe):
                "glib/0006-giomodule-do-not-try-to-load-modules-from-gio-module.patch",
                "glib/0008-gdbus-codgen-Use-a-proper-shebang-in-the-generator.patch",
                "glib/0009-Unhide-_g_io_modules_ensure_extension_points_registe.patch",
-               'glib/0015-Implementation-of-Cocoa-event-loop-integration-in-GM.patch'
+               "glib/0015-Implementation-of-Cocoa-event-loop-integration-in-GM.patch",
               ]
 
     files_libs = [
@@ -95,6 +97,10 @@ class Recipe(recipe.Recipe):
         return flags
 
     def prepare(self):
+        # Needed for running gdbus-codegen uninstalled
+        self.append_env['UNINSTALLED_GLIB_SRCDIR'] = self.build_dir
+        self.append_env['UNINSTALLED_GLIB_BUILDDIR'] = self.make_dir
+
         if self.config.variants.python3 is True:
             self.deps.append("Python")
 
@@ -198,7 +204,7 @@ class Recipe(recipe.Recipe):
             self._set_gio_flags(path1, path2, use_old_uri_scheme)
 
     def post_install(self):
-        if self.config.target_platform == Platform.WINDOWS:
+        if self.config.target_platform == Platform.WINDOWS and self.btype != BuildType.MESON:
             shutil.copy(os.path.join(self.build_dir, 'glib', 'glibconfig.h.win32'),
                         os.path.join(self.config.prefix, 'lib', 'glib-2.0',
                                      'include', 'glibconfig.h'))
@@ -218,7 +224,7 @@ class Recipe(recipe.Recipe):
                                      'include', arch)
             if not os.path.exists(arch_dir):
                 os.makedirs(arch_dir)
-            shutil.copyfile(os.path.join(self.build_dir, 'glib', 'glibconfig.h'),
+            shutil.copyfile(os.path.join(self.make_dir, 'glib', 'glibconfig.h'),
                         os.path.join(arch_dir, 'glibconfig.h'))
             with open(os.path.join(self.config.prefix, 'lib', 'glib-2.0',
                                    'include', 'glibconfig.h'), 'w+') as f:
