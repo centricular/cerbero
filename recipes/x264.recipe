@@ -13,6 +13,7 @@ class Recipe(recipe.Recipe):
                         '--disable-strip --disable-lavf'
     url = 'http://download.videolan.org/pub/x264/snapshots/x264-snapshot-20161218-2245-stable.tar.bz2'
     tarball_dirname= 'x264-snapshot-20161218-2245-stable'
+    patches = [name + '/0001-Fix-exporting-of-symbols-in-DLLs-for-use-with-MSVC.patch']
     new_env = {'AS': 'yasm'}
 
     files_libs = ['libx264']
