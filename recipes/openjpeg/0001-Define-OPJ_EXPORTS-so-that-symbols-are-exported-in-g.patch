@@ -1,0 +1,44 @@
+From 979869783971d0be32d70ccede2193a374421aa5 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Tue, 19 Apr 2016 03:31:27 +0530
+Subject: [PATCH] Fix symbol exporting when linking to openjpeg with MSVC
+
+Define OPJ_EXPORTS so that symbols are exported in generated DLLs and
+don't use __stdcall. The calling convention is deprecated and MSVC looks
+or the symbols with additional slotting that GCC does not do resulting
+in undefined symbol linker errors.
+---
+ configure.ac           | 3 +++
+ libopenjpeg/openjpeg.h | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 71098e5..d8e116e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -489,6 +489,9 @@ fi
+ 
+ ### Checks for linker characteristics
+ 
++# If on Windows, this will use dllexport to export symbols in our DLL
++AC_DEFINE([OPJ_EXPORTS], [], [Use dllexport if needed])
++
+ 
+ ### Checks for library functions
+ 
+diff --git a/libopenjpeg/openjpeg.h b/libopenjpeg/openjpeg.h
+index 59147c8..90c965a 100644
+--- a/libopenjpeg/openjpeg.h
++++ b/libopenjpeg/openjpeg.h
+@@ -44,7 +44,7 @@
+ #define OPJ_API
+ #define OPJ_CALLCONV
+ #else
+-#define OPJ_CALLCONV __stdcall
++#define OPJ_CALLCONV
+ /*
+ The following ifdef block is the standard way of creating macros which make exporting 
+ from a DLL simpler. All files within this DLL are compiled with the OPJ_EXPORTS
+-- 
+2.7.2.windows.1
+
