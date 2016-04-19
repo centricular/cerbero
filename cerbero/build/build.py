@@ -398,10 +398,9 @@ class Meson (MakefilesBase):
     http://mesonbuild.com
 
     '''
-    config_sh = shell.which('meson') or None
     configure_tpl = '%(config-sh)s --prefix=%(prefix)s --libdir=%(libdir)s \
             --default-library=%(default-library)s ..'
-    make = shell.which('ninja-build') or shell.which('ninja') or None
+    make = None
     make_install = None
     make_check = None
     make_clean = None
@@ -412,18 +411,36 @@ class Meson (MakefilesBase):
 
     def __init__(self):
         super(Meson, self).__init__()
-        if self.make:
+
+    def find_build_tools(self):
+        '''
+        We can't do this in __init__ because that is called from the user's
+        shell environment, not our Cerbero environment which contains the
+        build-tools prefix where meson and ninja-build might be installed.
+
+        We also need to do this for every step because when Cerbero continues
+        a build it does not go through the previous steps.
+        '''
+        # Find Meson
+        if not self.config_sh:
+            self.config_sh = shell.which('meson') or None
+        # Find ninja
+        if not self.make:
+            self.make = shell.which('ninja-build') or shell.which('ninja') or None
             self.make += ' -v'
-        self.make_install = self.make + ' install'
-        self.make_check = self.make + ' test'
-        self.make_clean = self.make + ' clean'
+        if not self.make_install:
+            self.make_install = self.make + ' install'
+        if not self.make_check:
+            self.make_check = self.make + ' test'
+        if not self.make_clean:
+            self.make_clean = self.make + ' clean'
 
     @modify_environment
     def configure(self):
+        self.find_build_tools()
         if not self.config_sh:
-            raise FatalError("The 'meson' build system was not found")
-        if not self.make:
-            raise FatalError("The 'ninja' build system was not found")
+            raise Exception("The 'meson' build system was not found")
+
         if os.path.exists(self.make_dir):
             shutil.rmtree(self.make_dir)
         os.makedirs(self.make_dir)
@@ -444,11 +461,27 @@ class Meson (MakefilesBase):
 
     @modify_environment
     def compile(self):
+        self.find_build_tools()
+        if not self.make:
+            raise Exception("The 'ninja' build system was not found")
         shell.call(self.make, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
 
     @modify_environment
     def install(self):
+        self.find_build_tools()
+        if not self.make_install:
+            raise Exception("The 'ninja' build system was not found")
         shell.call(self.make_install, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
+
+    @modify_environment
+    def clean(self):
+        self.find_build_tools()
+        shell.call(self.make_clean, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
+
+    @modify_environment
+    def check(self):
+        self.find_build_tools()
+        shell.call(self.make_check, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
 
 
 class BuildType (object):

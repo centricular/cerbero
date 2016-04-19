@@ -47,6 +47,7 @@ class BuildTools (BootstrapperBase):
         if self.config.platform == Platform.WINDOWS:
             self.BUILD_TOOLS.remove('m4')
             self.BUILD_TOOLS.append('gperf')
+            self.BUILD_TOOLS.append('meson')
         if self.config.platform == Platform.DARWIN:
             self.BUILD_TOOLS.append('gperf')
             self.BUILD_TOOLS.insert(0, 'xz')

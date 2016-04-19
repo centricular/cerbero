@@ -5,17 +5,22 @@ import stat
 
 class Recipe(recipe.Recipe):
     name = 'meson'
-    version = '0.28'
+    version = '0.32'
     licenses = [License.Apachev2]
     btype = BuildType.CUSTOM
-    remotes = {'origin': 'https://github.com/mesonbuild/meson.git'}
-    commit = '0.28.0'
+    remotes = {'origin': 'https://github.com/mesonbuild/meson.git',
+               'centricular': 'https://github.com/centricular/meson.git'}
+    commit = 'centricular/gst-msvc'
     deps = ['ninja']
 
     files_bin = ['bin/meson']
     files_python = []
 
+    def prepare(self):
+        if self.config.platform != Platform.WINDOWS:
+            InvalidRecipeError('Install me using your package manager')
+
     def install(self):
         os.chdir(self.build_dir)
-        shell.call('./install_meson.py --prefix %s' %
-                   self.config.prefix)
+        # FIXME: We are installing this into the Windows Python3 installation
+        shell.call('python3.exe ./setup.py install')
