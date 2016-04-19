@@ -209,6 +209,9 @@ def unpack(filepath, output_dir):
         call("%s -Jxf %s" % (TAR, to_unixpath(filepath)), output_dir)
     elif filepath.endswith('.zip'):
         zf = zipfile.ZipFile(filepath, "r")
+        # HACK: special-case ninja.exe that extracts without a subdir
+        if len(zf.namelist()) == 1 and zf.namelist()[0] == 'ninja.exe':
+            output_dir = os.path.join(output_dir, 'ninja-1.6.0')
         zf.extractall(path=output_dir)
     else:
         raise FatalError("Unknown tarball format %s" % filepath)
