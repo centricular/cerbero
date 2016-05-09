@@ -399,7 +399,7 @@ class Meson (MakefilesBase):
 
     '''
     configure_tpl = '%(config-sh)s --prefix=%(prefix)s --libdir=%(libdir)s \
-            --default-library=%(default-library)s ..'
+            --default-library=%(default-library)s --buildtype=%(buildtype)s ..'
     make = None
     make_install = None
     make_check = None
@@ -444,12 +444,20 @@ class Meson (MakefilesBase):
         if os.path.exists(self.make_dir):
             shutil.rmtree(self.make_dir)
         os.makedirs(self.make_dir)
+
+        if self.config.variants.debug:
+            buildtype = 'debug'
+        elif self.config.variants.nodebug:
+            buildtype = 'release'
+        else:
+            buildtype = 'debugoptimized'
         prefix = self.config.prefix
         libdir = 'lib' + self.config.lib_suffix
         options = {'config-sh': self.config_sh,
                    'prefix': prefix,
                    'libdir': libdir,
-                   'default-library': self.default_library}
+                   'default-library': self.default_library,
+                   'buildtype': buildtype}
         shell_cmd = self.configure_tpl % options
         if self.config.cross_compiling():
             cross_file = os.path.join(self.make_dir, 'meson-cross-file.txt')

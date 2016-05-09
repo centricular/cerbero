@@ -49,7 +49,10 @@ class Variants(object):
 
     __disabled_variants = ['x11', 'alsa', 'pulse', 'cdparanoia', 'v4l2', 'sdl',
                            'gi', 'python3', 'gtk3', 'appimagekit', 'unwind', 'visualstudio']
-    __enabled_variants = ['debug', 'clutter', 'python', 'testspackage']
+    __enabled_variants = ['clutter', 'python', 'testspackage']
+    # If not set, the default is debug + optimized. If 'debug' is set, full
+    # debugging is enabled. If 'nodebug' is set, full optimization is enabled.
+    __unset_variants = ['debug']
 
     def __init__(self, variants):
         for v in self.__enabled_variants:
@@ -68,7 +71,9 @@ class Variants(object):
                 return not object.__getattribute__(self, name[2:])
             else:
                 return object.__getattribute__(self, name)
-        except Exception:
+        except AttributeError:
+            if name in self.__unset_variants or name[2:] in self.__unset_variants:
+                return None
             raise AttributeError("%s is not a known variant" % name)
 
 
