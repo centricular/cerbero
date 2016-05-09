@@ -49,3 +49,8 @@ class Recipe(custom.GStreamer):
                 self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
         elif self.config.variants.nodebug:
             self.append_env['CFLAGS'] = ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+
+        if self.config.target_platform == Platform.WINDOWS:
+            # Cerbero is only installing a static library on Windows
+            # FIXME: Investigate this further
+            self.files_plugins_codecs_restricted.remove('lib/gstreamer-1.0/libgstmad%(mext)s')

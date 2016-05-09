@@ -146,3 +146,7 @@ class Recipe(custom.GStreamer):
                 self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
         elif self.config.variants.nodebug:
             self.append_env['CFLAGS'] = ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+
+        if self.config.variants.visualstudio:
+            # MSVC portability problems
+            self.files_plugins_vis.remove('lib/gstreamer-1.0/libgstlibvisual%(mext)s')

@@ -226,6 +226,11 @@ class Recipe(custom.GStreamer):
             self.deps.append("gtk+3")
             self.files_plugins_sys = ["lib/gstreamer-1.0/libgstgtksink%(mext)s"]
 
+        if self.config.variants.visualstudio:
+            # Portability issues with MSVC
+            self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgstspandsp%(mext)s')
+            self.files_plugins_effects.remove('lib/gstreamer-1.0/libgstsoundtouch%(mext)s')
+
         if self.config.target_platform != Platform.LINUX:
             self.configure_options += '--disable-gtk-doc '
         if self.config.target_platform == Platform.WINDOWS:
