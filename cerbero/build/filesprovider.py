@@ -107,6 +107,8 @@ class FilesProvider(object):
                              self.PY_CAT: self._search_pyfiles,
                              self.LANG_CAT: self._search_langfiles,
                              self.TYPELIB_CAT: self._search_typelibfiles,
+                             # TODO: Add a search function for plugins instead
+                             #       of handling it in the default handler
                              'default': self._search_files}
 
     def devel_files_list(self):
@@ -206,7 +208,16 @@ class FilesProvider(object):
         listing directories
         '''
         # replace extensions
-        fs = [f % self.extensions for f in files]
+        files_expanded = [f % self.extensions for f in files]
+        fs = []
+        # FIXME FIXME FIXME: TERRIBLE HACK. FIX WITH A PROPER PLUGIN SEARCHFUNC
+        for f in files_expanded:
+            if not f.endswith('.dll'):
+                fs.append(f)
+            # plugins that aren't built with meson
+            elif f.find('nice') == -1 and f.find('rtspclientsink') == -1 and \
+                 f.find('gstlibav') == -1:
+                fs.append(f.replace('libgst', 'gst'))
         # fill directories
         dirs = [x for x in fs if
                 os.path.isdir(os.path.join(self.config.prefix, x))]
