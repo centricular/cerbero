@@ -51,7 +51,7 @@ class Recipe(custom.GStreamer):
              'lib/gstreamer-1.0/libgstaudioparsers%(mext)s',
              'lib/gstreamer-1.0/libgstauparse%(mext)s',
              'lib/gstreamer-1.0/libgstavi%(mext)s',
-             'lib/gstreamer-1.0/libgstdv%(mext)s',
+             #'lib/gstreamer-1.0/libgstdv%(mext)s',
              'lib/gstreamer-1.0/libgstflac%(mext)s',
              'lib/gstreamer-1.0/libgstflv%(mext)s',
              'lib/gstreamer-1.0/libgstflxdec%(mext)s',
@@ -64,7 +64,7 @@ class Recipe(custom.GStreamer):
              'lib/gstreamer-1.0/libgstmultipart%(mext)s',
              'lib/gstreamer-1.0/libgstpng%(mext)s',
              'lib/gstreamer-1.0/libgstspeex%(mext)s',
-             'lib/gstreamer-1.0/libgsttaglib%(mext)s',
+             #'lib/gstreamer-1.0/libgsttaglib%(mext)s',
              'lib/gstreamer-1.0/libgstvpx%(mext)s',
              'lib/gstreamer-1.0/libgstwavenc%(mext)s',
              'lib/gstreamer-1.0/libgstwavpack%(mext)s',
@@ -130,6 +130,10 @@ class Recipe(custom.GStreamer):
             self.files_plugins_sys += ['lib/gstreamer-1.0/libgstpulse%(mext)s']
         else:
             self.configure_options += ' --disable-pulse'
+
+        if self.config.variants.visualstudio:
+            # Needs git master of libvpx which has proper MSVC support
+            self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgstvpx%(mext)s')
 
         if self.config.variants.nodebug:
             self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
