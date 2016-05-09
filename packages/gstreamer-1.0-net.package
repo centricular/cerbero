@@ -14,12 +14,12 @@ class Package(custom.GStreamer, package.Package):
             'gst-plugins-base-1.0:plugins_net', 'gst-plugins-good-1.0:plugins_net',
             'gst-plugins-ugly-1.0:plugins_net', 'gst-plugins-bad-1.0:plugins_net',
             'gst-rtsp-server-1.0:libs:typelibs:plugins_net']
-    files_devel = ['libnice-static:plugins_net_devel',
-            'gst-plugins-base-1.0-static:plugins_net_devel',
-            'gst-plugins-good-1.0-static:plugins_net_devel',
-            'gst-plugins-ugly-1.0-static:plugins_net_devel',
-            'gst-plugins-bad-1.0-static:plugins_net_devel',
-            'gst-rtsp-server-1.0-static:plugins_net_devel']
+    #files_devel = ['libnice-static:plugins_net_devel',
+    #        'gst-plugins-base-1.0-static:plugins_net_devel',
+    #        'gst-plugins-good-1.0-static:plugins_net_devel',
+    #        'gst-plugins-ugly-1.0-static:plugins_net_devel',
+    #        'gst-plugins-bad-1.0-static:plugins_net_devel',
+    #        'gst-rtsp-server-1.0-static:plugins_net_devel']
 
     def prepare(self):
         if self.config.target_platform != Platform.LINUX or \
@@ -27,6 +27,6 @@ class Package(custom.GStreamer, package.Package):
                 [DistroVersion.DEBIAN_SQUEEZE,
                  DistroVersion.UBUNTU_MAVERICK,
                  DistroVersion.UBUNTU_LUCID]:
-            self.files += ['glib-networking', 'glib-networking-static']
+            self.files += ['glib-networking'] #, 'glib-networking-static']
         elif self.config.target_platform == Platform.LINUX:
             self.sys_deps = {self.config.target_distro_version: ['glib-networking']}
