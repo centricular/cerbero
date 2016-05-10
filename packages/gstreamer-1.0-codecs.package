@@ -12,7 +12,7 @@ class Package(custom.GStreamer, package.Package):
 
     files = ['flac:libs', 'libkate:libs', 'libdv:libs',
             'libogg:libs', 'schroedinger:libs', 'speex:libs',
-            'libtheora:libs', 'wavpack:libs', 'libvpx:libs',
+            'libtheora:libs', 'wavpack:libs', #'libvpx:libs',
             'taglib:libs', 'opus:libs', 'libvorbis:libs',
             'openjpeg:libs', 'openh264:libs', 'spandsp:libs',
             'sbc:libs',

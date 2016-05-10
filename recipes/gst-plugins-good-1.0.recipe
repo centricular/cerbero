@@ -133,6 +133,7 @@ class Recipe(custom.GStreamer):
 
         if self.config.variants.visualstudio:
             # Needs git master of libvpx which has proper MSVC support
+            self.deps.remove('libvpx')
             self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgstvpx%(mext)s')
 
         if self.config.variants.nodebug:
