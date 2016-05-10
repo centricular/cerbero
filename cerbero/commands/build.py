@@ -18,7 +18,7 @@
 
 
 #from cerbero.oven import Oven
-from cerbero.commands import Command, register_command
+from cerbero.commands import Command, register_command, set_buildtype
 from cerbero.build.cookbook import CookBook
 from cerbero.build.oven import Oven
 from cerbero.utils import _, N_, ArgparseArgument
@@ -32,6 +32,9 @@ class Build(Command):
             args = [
                 ArgparseArgument('recipe', nargs='*',
                     help=_('name of the recipe to build')),
+                ArgparseArgument('--buildtype', default=None,
+                    help=_('specifies the build type: "debug", "release" or '
+                           '"debugoptimized" (default)')),
                 ArgparseArgument('--missing-files', action='store_true',
                     default=False,
                     help=_('prints a list of files installed that are '
@@ -60,6 +63,7 @@ class Build(Command):
             self.force = args.force
         if self.no_deps is None:
             self.no_deps = args.no_deps
+        set_buildtype(config, args.buildtype)
         self.runargs(config, args.recipe, args.missing_files, self.force,
                      self.no_deps, dry_run=args.dry_run)
 
