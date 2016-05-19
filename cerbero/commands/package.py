@@ -64,10 +64,15 @@ class Package(Command):
                     'create this package (conflicts with --skip-deps-build)')),
             ArgparseArgument('-k', '--keep-temp', action='store_true',
                 default=False, help=_('Keep temporary files for debug')),
+            ArgparseArgument('-r', '--retry-once', action='store_true',
+                default=False, help=_('on recipe build errors, retry from '
+                    'scratch once ')),
             ])
 
     def run(self, config, args):
         self.ssp = None
+        self.retry_once = args.retry_once
+        set_buildtype(config, args.buildtype)
         self.store = PackagesStore(config)
         p = self.store.get_package(args.package[0])
 
@@ -116,6 +121,7 @@ class Package(Command):
 
     def _build_deps(self, config, package, has_devel):
         build_command = build.Build()
+        build_command.retry_once = self.retry_once
         build_command.runargs(config, package.recipes_dependencies(has_devel),
             cookbook=self.store.cookbook)
 

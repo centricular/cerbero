@@ -38,7 +38,10 @@ class Build(Command):
                            'listed in the recipe')),
                 ArgparseArgument('--dry-run', action='store_true',
                     default=False,
-                    help=_('only print commands instead of running them '))]
+                    help=_('only print commands instead of running them ')),
+                ArgparseArgument('-r', '--retry-once', action='store_true',
+                    default=False,
+                    help=_('on recipe build errors, retry from scratch once '))]
             if force is None:
                 args.append(
                     ArgparseArgument('--force', action='store_true',
@@ -56,6 +59,7 @@ class Build(Command):
             Command.__init__(self, args)
 
     def run(self, config, args):
+        self.retry_once = args.retry_once
         if self.force is None:
             self.force = args.force
         if self.no_deps is None:
@@ -70,7 +74,7 @@ class Build(Command):
 
         oven = Oven(recipes, cookbook, force=self.force,
                     no_deps=self.no_deps, missing_files=missing_files,
-                    dry_run=dry_run)
+                    dry_run=dry_run, retry_once=self.retry_once)
         oven.start_cooking()
 
 

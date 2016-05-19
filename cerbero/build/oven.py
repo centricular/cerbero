@@ -62,7 +62,7 @@ class Oven (object):
     STEP_TPL = '[(%s/%s) %s -> %s ]'
 
     def __init__(self, recipes, cookbook, force=False, no_deps=False,
-                 missing_files=False, dry_run=False):
+                 missing_files=False, dry_run=False, retry_once=False):
         if isinstance(recipes, Recipe):
             recipes = [recipes]
         self.recipes = recipes
@@ -73,6 +73,7 @@ class Oven (object):
         self.config = cookbook.get_config()
         self.interactive = self.config.interactive
         shell.DRY_RUN = dry_run
+        self.retry_once = retry_once
 
     def start_cooking(self):
         '''
@@ -93,28 +94,41 @@ class Oven (object):
 
         i = 1
         for recipe in ordered_recipes:
+            retried = False
             try:
                 self._cook_recipe(recipe, i, len(ordered_recipes))
-            except BuildStepError, be:
-                if not self.interactive:
-                    raise be
-                msg = be.msg
-                msg += _("Select an action to proceed:")
-                action = shell.prompt_multiple(msg, RecoveryActions())
-                if action == RecoveryActions.SHELL:
-                    shell.enter_build_environment(self.config.target_platform,
-                            be.arch, recipe.get_for_arch (be.arch, 'build_dir'))
-                    break
-                elif action == RecoveryActions.RETRY_ALL:
-                    shutil.rmtree(recipe.get_for_arch (be.arch, 'build_dir'))
-                    self.cookbook.reset_recipe_status(recipe.name)
-                    self._cook_recipe(recipe, i, len(ordered_recipes))
-                elif action == RecoveryActions.RETRY_STEP:
-                    self._cook_recipe(recipe, i, len(ordered_recipes))
-                elif action == RecoveryActions.SKIP:
-                    continue
-                elif action == RecoveryActions.ABORT:
-                    raise AbortedError()
+            except BuildStepError as be:
+                # Another try-except in case we were asked to retry once
+                try:
+                    if self.retry_once:
+                        retried = True
+                        m.message(be.msg + _("Retrying once from scratch..."))
+                        shutil.rmtree(recipe.build_dir)
+                        self.cookbook.reset_recipe_status(recipe.name)
+                        self._cook_recipe(recipe, i, len(ordered_recipes))
+                    else:
+                        # Jump straight to the exception handling
+                        raise be
+                except BuildStepError as be:
+                    if not self.interactive:
+                        raise be
+                    msg = be.msg
+                    msg += _("Select an action to proceed:")
+                    action = shell.prompt_multiple(msg, RecoveryActions())
+                    if action == RecoveryActions.SHELL:
+                        shell.enter_build_environment(self.config.target_platform,
+                                be.arch, recipe.get_for_arch (be.arch, 'build_dir'))
+                        break
+                    elif action == RecoveryActions.RETRY_ALL:
+                        shutil.rmtree(recipe.get_for_arch (be.arch, 'build_dir'))
+                        self.cookbook.reset_recipe_status(recipe.name)
+                        self._cook_recipe(recipe, i, len(ordered_recipes))
+                    elif action == RecoveryActions.RETRY_STEP:
+                        self._cook_recipe(recipe, i, len(ordered_recipes))
+                    elif action == RecoveryActions.SKIP:
+                        continue
+                    elif action == RecoveryActions.ABORT:
+                        raise AbortedError()
             i += 1
 
     def _cook_recipe(self, recipe, count, total):
