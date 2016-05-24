@@ -86,7 +86,8 @@ def write_meson_cross_file(tpl, config, cross_file):
                           CXX=os.environ.get('CXX', 'cl.exe'),
                           AR=os.environ.get('AR', 'lib.exe'),
                           # strip is not used on MSVC
-                          STRIP=os.environ.get('STRIP', ''))
+                          STRIP=os.environ.get('STRIP', ''),
+                          exe_wrapper=config.exe_wrapper)
     with open(cross_file, 'w') as f:
         f.write(contents)
 
@@ -386,6 +387,7 @@ cpp = '{CXX}'
 ar = '{AR}'
 strip = '{STRIP}'
 pkgconfig = 'pkg-config'
+exe_wrapper = '{exe_wrapper}'
 '''
 
 # We derive from MakefilesBase even though we don't use make
