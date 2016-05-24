@@ -89,7 +89,7 @@ class Config (object):
                    'build_tools_prefix', 'build_tools_sources',
                    'build_tools_cache', 'home_dir', 'recipes_commits',
                    'recipes_remotes', 'ios_platform', 'extra_build_tools',
-                   'distro_packages_install', 'interactive',
+                   'distro_packages_install', 'interactive', 'exe_wrapper',
                    'target_arch_flags', 'sysroot', 'isysroot',
                    'extra_lib_path', 'cached_sources', 'tools_prefix',
                    'ios_min_version']
@@ -339,6 +339,7 @@ class Config (object):
         self.set_property('extra_build_tools', {})
         self.set_property('distro_packages_install', True)
         self.set_property('interactive', True)
+        self.set_property('exe_wrapper', None)
 
     def set_property(self, name, value, force=False):
         if name not in self._properties:
