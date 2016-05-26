@@ -93,12 +93,10 @@ class Recipe(recipe.Recipe):
 
     def _gio_flags(self, path1=None, path2=None, use_old_uri_scheme=False):
         flags = ''
-        def escape(path):
-            return '\\"%s\\"' % path
         if path1 is not None:
-            flags += ' -DGST_SDK_GLIB_GIO_DISTRO_GIO_MODULE_PATH=%s' % escape(path1)
+            flags += ' -DGST_SDK_GLIB_GIO_DISTRO_GIO_MODULE_PATH="%s"' % path1
         if path2 is not None:
-            flags += ' -DGST_SDK_GLIB_GIO_DISTRO_GIO_MODULE_PATH2=%s' % escape(path2)
+            flags += ' -DGST_SDK_GLIB_GIO_DISTRO_GIO_MODULE_PATH2="%s"' % path2
         if use_old_uri_scheme:
             flags += ' -DGST_SDK_GLIB_GIO_OLD_URI_SCHEME_HANDLERS=1'
         return flags
