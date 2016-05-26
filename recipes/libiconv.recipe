@@ -11,7 +11,8 @@ class Recipe(recipe.Recipe):
     patches = ['libiconv/0001-Use-correct-autotools-versions.patch',
                'libiconv/0002-Add-support-for-Android.patch',
                'libiconv/0003-stdint-fix-build-with-Android-s-Bionic-fox-x86.patch',
-               'libiconv/0004-lib-Only-rename-locale_charset-for-libiconv-not-libc.patch',]
+               'libiconv/0004-lib-Only-rename-locale_charset-for-libiconv-not-libc.patch',
+               'libiconv/0005-Fix-build-failure-due-to-usage-of-gets-with-GCC-6.patch',]
 
     configure_options = '--disable-nls --enable-static'
     platform_deps = {Platform.WINDOWS: ['gettext']}
