@@ -76,7 +76,22 @@ class CustomBuild(Build):
         pass
 
 
-def write_meson_cross_file(tpl, config, cross_file):
+def write_meson_cross_file(tpl, make_dir, config, using_msvc):
+    # Create and pass a specs file that sets link_args for GCC to find
+    # 'system' libraries (those that Cerbero builds and installs). This is
+    # only needed when cross-compiling because with a native compiler the
+    # LIBRARY_PATH variable applies.
+    if using_msvc:
+        c_link_args = str([''])
+    else:
+        specs_file = os.path.join(make_dir, 'meson-gcc-specs-file.txt')
+        c_link_args = str(['-specs=' + specs_file])
+        with open(specs_file, 'w') as f:
+            f.write('*link_libgcc:\n')
+            f.write('%D -L{0}/lib{1}\n'.format(config.prefix, config.lib_suffix))
+    # Create a cross-info file that tells Meson and GCC how to cross-compile
+    # this project
+    cross_file = os.path.join(make_dir, 'meson-cross-file.txt')
     contents = tpl.format(system=config.target_platform,
                           cpu=config.target_arch,
                           # Assume all ARM sub-archs are in little endian mode
@@ -87,9 +102,11 @@ def write_meson_cross_file(tpl, config, cross_file):
                           AR=os.environ.get('AR', 'lib.exe'),
                           # strip is not used on MSVC
                           STRIP=os.environ.get('STRIP', ''),
-                          exe_wrapper=config.exe_wrapper)
+                          exe_wrapper=config.exe_wrapper,
+                          c_link_args=c_link_args)
     with open(cross_file, 'w') as f:
         f.write(contents)
+    return cross_file
 
 def modify_environment(func):
     ''' Decorator to modify the build environment '''
@@ -373,7 +390,12 @@ class CMake (MakefilesBase):
         MakefilesBase.configure(self)
 
 
-# Keep [binaries] as the last section
+# IMPORTANT: Keep [binaries] as the last section. We append to this template.
+#
+# Note: We force stpcpy to be false because our ancient version of the mingw
+# toolchain claims to provide it but doesn't define it in the standard string.h
+# This is fixed in newer versions of GCC where stpcpy is only available when SSP
+# support enabled.
 MESON_CROSS_FILE_TPL = \
 '''
 [host_machine]
@@ -383,6 +405,9 @@ cpu = '{cpu}'
 endian = '{endian}'
 
 [properties]
+c_link_args = {c_link_args}
+cpp_link_args = {c_link_args}
+has_function_stpcpy = false
 
 [binaries]
 c = '{CC}'
@@ -463,9 +488,11 @@ class Meson (MakefilesBase):
                    'buildtype': buildtype}
         shell_cmd = self.configure_tpl % options
         if self.config.cross_compiling():
-            cross_file = os.path.join(self.make_dir, 'meson-cross-file.txt')
-            write_meson_cross_file(MESON_CROSS_FILE_TPL, self.config, cross_file)
-            shell_cmd += ' --cross-file=' + cross_file
+            using_msvc = self.can_use_msvc_toolchain and \
+                self.config.variants.visualstudio
+            f = write_meson_cross_file(MESON_CROSS_FILE_TPL, self.make_dir,
+                                       self.config, using_msvc)
+            shell_cmd += ' --cross-file=' + f
         # With LD_LIBRARY_PATH, Meson and Ninja pick up the Cerbero libraries
         # which can sometimes cause a segfault at weird times
         shell.call(shell_cmd, self.make_dir, unset_env=['LD_LIBRARY_PATH'])
