@@ -1,26 +1,20 @@
-From b81d7e0dbd64945017082283b04ae4b5bb5d7ee3 Mon Sep 17 00:00:00 2001
+From 1543a0a9fafc58ea2548cfbbb382f2672703159d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Fri, 15 Apr 2016 11:26:43 +0100
-Subject: [PATCH 2/2] meson: add meson build for bz2
+Subject: [PATCH 1/5] meson: add meson build for bz2
 
 ---
- meson.build | 85 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 85 insertions(+)
+ meson.build | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
  create mode 100644 meson.build
 
 diff --git a/meson.build b/meson.build
 new file mode 100644
-index 0000000..106885a
+index 0000000..7f70507
 --- /dev/null
 +++ b/meson.build
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,77 @@
 +project('bzip2', 'c', version : '1.0.6')
-+
-+# FIXME:
-+# Can you fix the WINAPI thing to use __declspec(dllimport)/export
-+# And also note its usage of BZ_IMPORT (you need to define that while importing bzlib.h)
-+# Should get rid of that in favour of some config.h-esque thing similar to how orc uses ORC_EXPORTS
-+# <windows.h> does #define WINAPI __stdcall
 +
 +bzip2_sources = [
 +  'blocksort.c',
@@ -35,7 +29,7 @@ index 0000000..106885a
 +libversion = meson.project_version()
 +soversion = '1.0'
 +
-+bz2_c_args = [ '-D_FILE_OFFSET_BITS=64' ]
++bz2_c_args = ['-D_FILE_OFFSET_BITS=64']
 +
 +cc = meson.get_compiler('c')
 +if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
@@ -94,11 +88,126 @@ index 0000000..106885a
 +  c_args: bz2_c_args)
 +
 +install_man('bzdiff.1', 'bzgrep.1', 'bzip2.1', 'bzmore.1')
-+
-+# FIXME: need to chmod +x those after install (or maybe just do that in source)
-+#install_data('bzgrep', 'bzmore', 'bzdiff', install_dir : 'bin')
++install_data('bzgrep', 'bzmore', 'bzdiff', install_dir : 'bin')
 +
 +# FIXME: build docs
 -- 
-2.8.0.rc3
+2.9.0.windows.1
+
+
+From 7e5370733be5a318b862a65667cfe63cd9873791 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Fri, 17 Jun 2016 15:55:36 +0530
+Subject: [PATCH 2/5] bzlib.h: Don't need to #include windows.h anymore
+
+We no longer use the WINAPI macro
+---
+ bzlib.h | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/bzlib.h b/bzlib.h
+index 219a94f..955baf4 100644
+--- a/bzlib.h
++++ b/bzlib.h
+@@ -76,11 +76,6 @@ typedef
+ #endif
+ 
+ #ifdef _WIN32
+-#   include <windows.h>
+-#   ifdef small
+-      /* windows.h define small to char */
+-#      undef small
+-#   endif
+ #   ifdef BZ_EXPORT
+ #   define BZ_API(func) func
+ #   define BZ_EXTERN __declspec(dllexport) extern
+-- 
+2.9.0.windows.1
+
+
+From 07d00c5c16ff44800b8737c7d948d2d9beb057a8 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Fri, 17 Jun 2016 15:57:54 +0530
+Subject: [PATCH 3/5] bzlib.h: Don't use dllimport/dllexport when
+ BZ_STATIC_COMPILATION is defined
+
+This allows code to see the correct prototypes for linking to the static
+library on Windows. Without this, it'll try to link to the static
+library with indirections required for accessing symbols in a DLL and
+fail to find those symbols.
+---
+ bzlib.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/bzlib.h b/bzlib.h
+index 955baf4..acc6bf8 100644
+--- a/bzlib.h
++++ b/bzlib.h
+@@ -75,7 +75,8 @@ typedef
+ #include <stdio.h>
+ #endif
+ 
+-#ifdef _WIN32
++/* Define BZ_STATIC_COMPILATION if linking to libbz2 statically */
++#if defined(_WIN32) && !defined(BZ_STATIC_COMPILATION)
+ #   ifdef BZ_EXPORT
+ #   define BZ_API(func) func
+ #   define BZ_EXTERN __declspec(dllexport) extern
+-- 
+2.9.0.windows.1
+
+
+From bcc6bbdb93c5591945ddd4c499f49c6caf56e474 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Fri, 17 Jun 2016 15:59:11 +0530
+Subject: [PATCH 4/5] meson: soversion should be an unsigned integer
+
+Either as an integer, or as a string containing an integer
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 7f70507..8146535 100644
+--- a/meson.build
++++ b/meson.build
+@@ -11,7 +11,7 @@ bzip2_sources = [
+ ]
+ 
+ libversion = meson.project_version()
+-soversion = '1.0'
++soversion = '1'
+ 
+ bz2_c_args = ['-D_FILE_OFFSET_BITS=64']
+ 
+-- 
+2.9.0.windows.1
+
+
+From 14306fd5a9c3f12cb7c36af6c8b4719234586540 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Fri, 17 Jun 2016 16:00:21 +0530
+Subject: [PATCH 5/5] meson: Ignore warnings about 'insecure functions' that
+ are used everywhere by bz2
+
+---
+ meson.build | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/meson.build b/meson.build
+index 8146535..bc333c5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -19,6 +19,9 @@ cc = meson.get_compiler('c')
+ if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
+   # bzip2.c:557: warning: variable nread set but not used
+   bz2_c_args += ['-Wno-unused-but-set-variable']
++elif cc.get_id() == 'msvc'
++  # Ignore C4996 about "insecure functions"
++  bz2_c_args += ['/wd4996']
+ endif
+ 
+ bz2_incs = include_directories('.')
+-- 
+2.9.0.windows.1
 
