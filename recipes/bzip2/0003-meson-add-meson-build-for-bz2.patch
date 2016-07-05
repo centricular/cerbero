@@ -109,18 +109,14 @@ diff --git a/bzlib.h b/bzlib.h
 index 219a94f..955baf4 100644
 --- a/bzlib.h
 +++ b/bzlib.h
-@@ -76,11 +76,6 @@ typedef
+@@ -76,7 +76,6 @@ typedef
  #endif
  
  #ifdef _WIN32
 -#   include <windows.h>
--#   ifdef small
--      /* windows.h define small to char */
--#      undef small
--#   endif
- #   ifdef BZ_EXPORT
- #   define BZ_API(func) func
- #   define BZ_EXTERN __declspec(dllexport) extern
+ #   ifdef small
+       /* windows.h define small to char */
+ #      undef small
 -- 
 2.9.0.windows.1
 
@@ -150,9 +146,9 @@ index 955baf4..acc6bf8 100644
 -#ifdef _WIN32
 +/* Define BZ_STATIC_COMPILATION if linking to libbz2 statically */
 +#if defined(_WIN32) && !defined(BZ_STATIC_COMPILATION)
- #   ifdef BZ_EXPORT
- #   define BZ_API(func) func
- #   define BZ_EXTERN __declspec(dllexport) extern
+ #   ifdef small
+       /* windows.h define small to char */
+ #      undef small
 -- 
 2.9.0.windows.1
 
