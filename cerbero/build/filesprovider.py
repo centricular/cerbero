@@ -393,8 +393,11 @@ class FilesProvider(object):
                 pattern += 'lib/%(f)s.dll.a '
                 pattern += 'lib/%(f)s.def '
                 pattern += 'lib/%(fnolib)s.lib '
+                # MSVC Program database (debugging symbols) file
+                # FIXME: Does not search for exe pdb files
+                pattern += 'bin/%(fnolib)s*.pdb '
             elif self.platform in [Platform.DARWIN, Platform.IOS]:
-                pattern += 'lib/%(f)s.dylib '
+                pattern += 'lib/%(f)s*.dylib '
 
             libsmatch = [pattern % {'f': x, 'fnolib': x[3:]} for x in
                          self._get_category_files_list(category)]
