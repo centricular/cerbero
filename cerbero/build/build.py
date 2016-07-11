@@ -471,7 +471,7 @@ class Meson (MakefilesBase):
         if not self.config_sh:
             raise Exception("The 'meson' build system was not found")
 
-        if os.path.exists(self.make_dir):
+        if os.path.exists(self.make_dir) and os.listdir(self.make_dir):
             shutil.rmtree(self.make_dir)
         os.makedirs(self.make_dir)
 
