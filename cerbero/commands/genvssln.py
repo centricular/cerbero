@@ -20,7 +20,7 @@ import os
 
 from cerbero.build import build
 from cerbero.enums import Platform
-from cerbero.commands import Command, register_command
+from cerbero.commands import Command, register_command, set_buildtype
 from cerbero.utils import _, N_, shell, ArgparseArgument
 from cerbero.utils import messages as m
 from cerbero.build.cookbook import CookBook
@@ -35,6 +35,9 @@ class GenVSSolution(Command):
         Command.__init__(self,
             [ArgparseArgument('recipe', nargs=1,
                 help=_('recipe to generate solution for')),
+            ArgparseArgument('--buildtype', default=None,
+                help=_('specifies the build type: "debug", "release" or '
+                       '"debugoptimized" (default)')),
             ArgparseArgument('-s', '--source-dir', default=None,
                 help=_('source tree to use for generating the solution '
                        '(default: cerbero )')),
@@ -50,6 +53,7 @@ class GenVSSolution(Command):
             ])
 
     def run(self, config, args):
+        set_buildtype(config, args.buildtype)
         self.runargs(config, args.recipe[0], args.source_dir, args.open, args.fetch)
 
     def runargs(self, config, recipe, src_dir, open_after, fetch_again):
