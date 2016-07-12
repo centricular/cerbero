@@ -211,13 +211,20 @@ class FilesProvider(object):
         files_expanded = [f % self.extensions for f in files]
         fs = []
         # FIXME FIXME FIXME: TERRIBLE HACK. FIX WITH A PROPER PLUGIN SEARCHFUNC
+        # Needs to be aware of the toolchain used to know what the output
+        # DLL filename of the plugins will be
         for f in files_expanded:
-            if not f.endswith('.dll'):
+            if f.endswith('.dll') and 'giognutls' not in f and \
+               'gstnice' not in f and 'gstlibav' not in f and \
+               'gstrtspclientsink' not in f:
+                # plugins and modules that are built with meson
+                f = f.replace('libgst', 'gst')
                 fs.append(f)
-            # plugins that aren't built with meson
-            elif f.find('nice') == -1 and f.find('rtspclientsink') == -1 and \
-                 f.find('gstlibav') == -1:
-                fs.append(f.replace('libgst', 'gst'))
+                # HACK: Add pdb file with the DLL. This should go into the
+                # devel files list and the devel package.
+                fs.append(f.replace('.dll', '.pdb'))
+            else:
+                fs.append(f)
         # fill directories
         dirs = [x for x in fs if
                 os.path.isdir(os.path.join(self.config.prefix, x))]
