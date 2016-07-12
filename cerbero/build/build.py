@@ -468,9 +468,13 @@ class Meson (MakefilesBase):
         if not self.config_sh:
             raise Exception("The 'meson' build system was not found")
 
-        if os.path.exists(self.make_dir) and os.listdir(self.make_dir):
-            shutil.rmtree(self.make_dir)
-        os.makedirs(self.make_dir)
+        if os.path.exists(self.make_dir):
+            # Only remove if it's not empty
+            if os.listdir(self.make_dir):
+                shutil.rmtree(self.make_dir)
+                os.makedirs(self.make_dir)
+        else:
+            os.makedirs(self.make_dir)
 
         if self.config.variants.debug:
             buildtype = 'debug'
