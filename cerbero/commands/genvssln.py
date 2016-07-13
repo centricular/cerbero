@@ -41,19 +41,31 @@ class GenVSSolution(Command):
              ArgparseArgument('--open', default=False, action='store_true',
                  help=_('open the solution in Visual Studio when done '
                         '(default: print the path to the console)')),
+             # This is useful when generating a solution from a git repository
+             # when you know that the remote has changes that you want to fetch
+             # and checkout.
+             ArgparseArgument('--fetch', default=False, action='store_true',
+                 help=_('fetch and extract the sources again if using '
+                        'the cerbero source tree (default: no)')),
             ])
 
     def run(self, config, args):
-        self.runargs(config, args.recipe[0], args.source_dir, args.open)
+        self.runargs(config, args.recipe[0], args.source_dir, args.open, args.fetch)
 
-    def runargs(self, config, recipe, src_dir, open_after):
+    def runargs(self, config, recipe, src_dir, open_after, fetch_again):
         m.message(_('Generating VS solution for ' + recipe))
         # Get the recipe object from the cookbook (the recipe list)
         cookbook = CookBook(config)
         recipe = cookbook.get_recipe(recipe)
         # Check if the recipe uses Meson
         if not isinstance(recipe, build.Meson):
-            raise UsageError('recipe does not support building with MSVC')
+            raise UsageError('recipe does not use Meson')
+        if not recipe.can_use_msvc_toolchain:
+            raise UsageError('recipe cannot build with MSVC on this platform')
+        # Fetch again if requested
+        if not src_dir and fetch_again:
+            recipe.fetch()
+            recipe.extract()
         # Compute the output directory
         if not src_dir:
             # Poorly-named attribute on the recipe
