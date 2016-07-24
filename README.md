@@ -1,0 +1,116 @@
+# Description
+
+cerbero is a multi-platform build system for Open Source projects that builds
+and creates native packages for different platforms, architectures and distributions.
+
+Projects are defined using recipes files (.recipe), which provides a description
+of the project being built such as name, version, licenses, sources and the way
+it's built. It also provide listing of files, which is later used for the packaging.
+
+Packages are defined using packages files (.package), describing the package name,
+version, license, maintainer and other fields used to create the packages. A
+package wraps a list of recipes, from which the list of files belonging to the
+package will be extracted.
+
+# Minimum Requirements
+
+cerbero provides bootstrapping facilities for all platforms, but it still needs a
+minimum base to bootstrap
+
+## Linux
+
+On linux, you will only need a distribution with python >= 2.6 and python's argparse module,
+which is already included in python2.7
+
+## OSX
+
+On OSX you will need to have install the following software:
+  * XCode
+  * CMake: http://www.cmake.org/cmake/resources/software.html
+
+## Windows
+
+The initial setup on Windows is a little bit longer, but only a few programs are required.
+  * Python2.7: https://www.python.org/downloads/
+     IMPORTANT : Chose the 2.7 version. The 3.x versions are *not* supported
+  * CMake: http://www.cmake.org/cmake/resources/software.html
+  * Git: http://git-scm.com/download/win
+     IMPORTANT: Select the install option "Checkout as-is, Commit as-is"
+  * Msys/MinGW: http://sourceforge.net/projects/mingw/files/Installer/mingw-get-setup.exe/download
+     Install it with all the options enabled
+  * WiX 3.5: http://wix.codeplex.com/releases/view/60102
+
+The Direct Show plugins still needs to be built using Microsoft's compiler and their SDK,
+due to the dependency on the Direct Show base classes.
+You need to install the following software:
+  * Microsoft SDK 7.1: http://www.microsoft.com/en-us/download/details.aspx?id=8279
+  * Windows Driver Kit 7.1.0: http://msdn.microsoft.com/en-us/windows/hardware/hh852365
+
+cerbero must be run in the MingGW shell, which is accessible from the main menu or desktop 
+(if it is not, go to Mingw Installation manager, select MSYS Base Development and install
+msys-bash).
+
+The last step is making python and git available from the shell, for which you will need
+to create a .profile file:
+
+If you use 64-bit Windows, please execute:
+
+```
+echo 'export PATH="$PATH:/c/Python27:/c/Program Files (x86)/Git/bin:/c/MinGW/bin/"' > ~/.profile
+```
+
+If you use 32-bit Windows, please execute:
+
+```
+echo 'export PATH="$PATH:/c/Python27:/c/Program Files/Git/bin:/c/MinGW/bin/"' > ~/.profile
+```
+
+Note that inside the shell, `/` is mapped to `C:\Mingw\msys\1.0\`
+
+# Usage
+
+Despite the presence of setup.py this tool does not need installation. It is usually invoked via the cerbero-uninstalled script, which should be invoked as `./cerbero-uninstalled`, or you can add the cerbero directory in your `PATH` and invoke it as `cerbero-uninstalled`.
+
+### Bootstrap
+Before using cerbero for the first time, you will need to run the bootstrap command.
+This command installs the missing parts of the build system using the packages manager
+when available. Note that this will take a while (a couple hours or even more).
+
+    $ cerbero-uninstalled bootstrap
+
+#### Help
+
+    $ cerbero-uninstalled --help
+
+#### List available recipes
+
+    $ cerbero-uninstalled list
+
+#### List available packages
+
+    $ cerbero-uninstalled list-packages
+
+#### Build a recipe
+
+    $ cerbero-uninstalled build gtk+
+
+#### Rebuild a single recipe
+
+    $ cerbero-uninstalled buildone gtk+
+
+#### Clean a recipe
+
+    $ cerbero-uninstalled cleanone gtk+
+
+#### Create a package (this automatically invokes build)
+
+    $ cerbero-uninstalled package gstreamer-1.0
+
+# License
+
+cerbero is released under the GNU Lesser General Public License, Version 2.1 (LGPLv2.1)
+
+# Dependencies
+
+ * python >= 2.7
+ * python-argparse
