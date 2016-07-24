@@ -19,8 +19,7 @@ minimum base to bootstrap
 
 ## Linux
 
-On linux, you will only need a distribution with python >= 2.6 and python's argparse module,
-which is already included in python2.7
+On linux, you will only need a distribution with python >= 2.7
 
 ## OSX
 
@@ -30,81 +29,137 @@ On OSX you will need to have install the following software:
 
 ## Windows
 
-The initial setup on Windows is a little bit longer, but only a few programs are required.
-  * Python2.7: https://www.python.org/downloads/
-     IMPORTANT : Chose the 2.7 version. The 3.x versions are *not* supported
-  * CMake: http://www.cmake.org/cmake/resources/software.html
-  * Git: http://git-scm.com/download/win
-     IMPORTANT: Select the install option "Checkout as-is, Commit as-is"
-  * Msys/MinGW: http://sourceforge.net/projects/mingw/files/Installer/mingw-get-setup.exe/download
-     Install it with all the options enabled
+The initial setup on Windows has a longer initial setup, but you only have to
+do this once. Please follow the instructions here **carefully**.
+
+  * Python 2.7: https://www.python.org/downloads/
+   * IMPORTANT: Download 64-bit if you're running 64-bit Windows and 32-bit otherwise
+   * Install it for all users
+   * Don't select pip and don't register extensions
+   * Inside `C:\Python27`, rename `python.exe` to `python2.exe`
+    * This is needed to avoid a collision with Python 3
+
+  * Python 3.5: https://www.python.org/downloads/
+   * IMPORTANT: Download 64-bit if you're running 64-bit Windows and 32-bit otherwise
+   * This is needed for building with Meson
+   * Select options:
+    * `Install launcher for all users`
+    * `Add Python 3.5 to PATH`
+   * Click `Customize installation`
+   * Install at least everything, `for all users`, then Next
+   * Advanced Options, `Install for all users`, `Add Python to environment variables`
+    * Ensure that the installation directory is `C:\Python35`
+    * If you use a different install path, make sure it doesn't have spaces 
+   * Run `cmd.exe` as Administrator, `cd C:\Python35` and run `mklink python3.exe python.exe`
+    * This creates a symlink from `python3` to `python` which is required because most scripts assume Python 3 is called `python3`
+
+  * CMake: https://cmake.org/download/#latest
+   * Select option `Add CMake to the system PATH for all users`
   * WiX 3.5: http://wix.codeplex.com/releases/view/60102
+   * Needed for creating MSI installers
 
-The Direct Show plugins still needs to be built using Microsoft's compiler and their SDK,
-due to the dependency on the Direct Show base classes.
-You need to install the following software:
-  * Microsoft SDK 7.1: http://www.microsoft.com/en-us/download/details.aspx?id=8279
-  * Windows Driver Kit 7.1.0: http://msdn.microsoft.com/en-us/windows/hardware/hh852365
+  * Git: https://github.com/git-for-windows/git/releases/latest
+   * `Use Git from the Windows Command prompt`, next
+   * `Checkout as-is, commit as-is`, next
+   * `Use MinTTY`, next
+   * `Enable file system caching`, install
 
-cerbero must be run in the MingGW shell, which is accessible from the main menu or desktop 
-(if it is not, go to Mingw Installation manager, select MSYS Base Development and install
-msys-bash).
+  * MSYS/MinGW: http://sourceforge.net/projects/mingw/files/Installer/mingw-get-setup.exe/download
+   * Install it with all the options enabled
 
-The last step is making python and git available from the shell, for which you will need
-to create a .profile file:
+Once the MSYS installation finishes, the MinGW Installation Manager will be
+started. You must select only `mingw-developer-toolkit` and `msys-base`, and
+then select `Installation > Apply Changes` from the menu. This will install the
+MSYS shell and basic build tools such as Perl, Autotools, etc.
 
-If you use 64-bit Windows, please execute:
+  * Visual Studio 2015 Community: http://go.microsoft.com/fwlink/?LinkID=626924&clcid=0x409
+   * The only supported version is 2015
+    * You can skip this if you already have Visual Studio 2015
+   * Default options
+   * Make sure to select 'C++' from Programming Languages support
 
-```
-echo 'export PATH="$PATH:/c/Python27:/c/Program Files (x86)/Git/bin:/c/MinGW/bin/"' > ~/.profile
-```
+Lastly, exclude `C:\MinGW` from your anti-virus scan list. If you don't do
+this, the build will be slowed down massively because your anti-virus will keep
+trying to scan all the temporary build files, and might even cause build
+failures due to race conditions between the anti-virus locking a file for
+scanning and the build system trying to open or delete it.
 
-If you use 32-bit Windows, please execute:
+# Basic Usage
 
-```
-echo 'export PATH="$PATH:/c/Python27:/c/Program Files/Git/bin:/c/MinGW/bin/"' > ~/.profile
-```
+Despite the presence of `setup.py` this tool does not need installation. It is
+usually invoked via the cerbero-uninstalled script, which should be invoked as
+`./cerbero-uninstalled`, or you can add the cerbero directory in your `PATH`
+and invoke it as `cerbero-uninstalled`.
 
-Note that inside the shell, `/` is mapped to `C:\Mingw\msys\1.0\`
+#### Bootstrap
 
-# Usage
+Before using cerbero for the first time, you will need to run the bootstrap
+command. This command installs the missing parts of the build system using the
+packages manager when available. Note that this can take a while since it
+fetches tarballs over the network and then builds recipes using Autotools.
 
-Despite the presence of setup.py this tool does not need installation. It is usually invoked via the cerbero-uninstalled script, which should be invoked as `./cerbero-uninstalled`, or you can add the cerbero directory in your `PATH` and invoke it as `cerbero-uninstalled`.
+    $ ./cerbero-uninstalled bootstrap
 
-### Bootstrap
-Before using cerbero for the first time, you will need to run the bootstrap command.
-This command installs the missing parts of the build system using the packages manager
-when available. Note that this will take a while (a couple hours or even more).
+If you want to cross-compile to 32-bit from 64-bit (or vice-versa), you also need
+to bootstrap that.
 
-    $ cerbero-uninstalled bootstrap
+    $ ./cerbero-uninstalled -c config/win32-mixed-msvc.cbc bootstrap
+
+`config/win32-mixed-msvc.cbc` is the configuration that we use for providing
+a mixed Autotools-and-MSVC toolchain. With this configuration, Cerbero recipes
+that can use MSVC will be built with MSVC and those that can't will use MinGW.
+
+In all the commands below, you should replace `win32-mixed-msvc.cbc` with
+`win64-mixed-msvc.cbc` if you want to build for 64-bit.
 
 #### Help
 
-    $ cerbero-uninstalled --help
+    $ ./cerbero-uninstalled --help
 
 #### List available recipes
 
-    $ cerbero-uninstalled list
+    $ ./cerbero-uninstalled list
 
 #### List available packages
 
-    $ cerbero-uninstalled list-packages
+    $ ./cerbero-uninstalled list-packages
 
 #### Build a recipe
 
-    $ cerbero-uninstalled build gtk+
+    $ ./cerbero-uninstalled -c config/win32-mixed-msvc.cbc build gst-plugins-base-1.0
 
 #### Rebuild a single recipe
 
-    $ cerbero-uninstalled buildone gtk+
+    $ ./cerbero-uninstalled -c config/win32-mixed-msvc.cbc buildone gst-plugins-base-1.0
 
 #### Clean a recipe
 
-    $ cerbero-uninstalled cleanone gtk+
+    $ cerbero-uninstalled -c config/win32-mixed-msvc.cbc cleanone gst-plugins-base-1.0
 
 #### Create a package (this automatically invokes build)
 
-    $ cerbero-uninstalled package gstreamer-1.0
+    # This will build several recipes including gstreamer-1.0, gst-plugins-*-1.0, and more
+    $ cerbero-uninstalled -c config/win32-mixed-msvc.cbc package gstreamer-1.0
+
+# More Details
+
+The following recipes are currently using Meson and are built with MSVC:
+
+| Recipes using Meson + MSVC |
+|---------------------------|
+| bzip2.recipe |
+| orc.recipe |
+| libffi.recipe (only 32-bit) |
+| glib.recipe |
+| gstreamer-1.0.recipe |
+| gst-plugins-base-1.0.recipe |
+| gst-plugins-good-1.0.recipe |
+| gst-plugins-bad-1.0.recipe |
+| gst-plugins-ugly-1.0.recipe |
+
+For more details on how to use Cerbero, especially for things like platform
+support, recipe format, generating Visual Studio project files, and so on,
+please refer to the [work-in-progress documentation](https://github.com/centricular/cerbero-docs/blob/master/start.md).
 
 # License
 
@@ -113,4 +168,3 @@ cerbero is released under the GNU Lesser General Public License, Version 2.1 (LG
 # Dependencies
 
  * python >= 2.7
- * python-argparse
