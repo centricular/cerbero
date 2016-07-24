@@ -134,12 +134,12 @@ In all the commands below, you should replace `win32-mixed-msvc.cbc` with
 
 #### Clean a recipe
 
-    $ cerbero-uninstalled -c config/win32-mixed-msvc.cbc cleanone gst-plugins-base-1.0
+    $ ./cerbero-uninstalled -c config/win32-mixed-msvc.cbc cleanone gst-plugins-base-1.0
 
 #### Create a package (this automatically invokes build)
 
     # This will build several recipes including gstreamer-1.0, gst-plugins-*-1.0, and more
-    $ cerbero-uninstalled -c config/win32-mixed-msvc.cbc package gstreamer-1.0
+    $ ./cerbero-uninstalled -c config/win32-mixed-msvc.cbc package gstreamer-1.0
 
 # More Details
 
