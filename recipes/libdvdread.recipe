@@ -15,3 +15,10 @@ class Recipe(recipe.Recipe):
 
     files_libs = ['libdvdread']
     files_devel = ['include/dvdread', 'lib/pkgconfig/dvdread.pc']
+
+    def post_install(self):
+        if self.config.target_platform == Platform.WINDOWS:
+            # MSVC defines SSIZE_T but not ssize_t. Also size_t is defined in crtdefs.h.
+            shell.replace(os.path.join(self.config.prefix, 'include', 'dvdread', 'dvd_reader.h'),
+                          {'#ifdef _MSC_VER':
+                           '#ifdef _MSC_VER\n#define ssize_t SSIZE_T\n#include <crtdefs.h>\n#include <BaseTsd.h>'})
