@@ -21,6 +21,7 @@ import os
 from cerbero.config import Platform, Architecture, Distro
 from cerbero.utils import shell, to_unixpath, add_system_libs
 from cerbero.utils import messages as m
+from cerbero.errors import FatalError
 import shutil
 import re
 
@@ -105,6 +106,7 @@ class MakefilesBase (Build):
     make_clean = 'make clean'
     use_system_libs = False
     allow_parallel_build = True
+    autodetect_jobs = True
     srcdir = '.'
     append_env = None
     new_env = None
@@ -122,9 +124,13 @@ class MakefilesBase (Build):
             self.make_dir = os.path.join (self.config_src_dir, "cerbero-build-dir")
         else:
             self.make_dir = self.config_src_dir
-        if self.config.allow_parallel_build and self.allow_parallel_build \
-                and self.config.num_of_cpus > 1:
-            self.make += ' -j%d' % self.config.num_of_cpus
+        if self.config.allow_parallel_build and self.allow_parallel_build:
+            if self.config.num_of_cpus > 1 and self.autodetect_jobs:
+                self.make += ' -j%d' % self.config.num_of_cpus
+        elif not self.allow_parallel_build:
+            # Set it explicitly because ninja's default is a parallel build,
+            # but ignore the global default because that's only for make.
+            self.make += ' -j1'
         self._old_env = None
 
         # Make sure user's env doesn't mess up with our build.
@@ -344,9 +350,56 @@ class CMake (MakefilesBase):
         MakefilesBase.configure(self)
 
 
+# We derive from MakefilesBase even though we don't use make
+# because we use the same overall structure
+class Meson (MakefilesBase):
+    '''
+    Base class for the Meson build system
+    http://mesonbuild.com
+
+    '''
+    config_sh = shell.which('meson') or None
+    configure_tpl = '%(config-sh)s --prefix=%(prefix)s --libdir=%(libdir)s \
+            --default-library=%(default-library)s ..'
+    make = shell.which('ninja-build') or shell.which('ninja') or None
+    make_install = None
+    make_check = None
+    make_clean = None
+    autodetect_jobs = False
+    default_library = 'shared'
+    requires_non_src_build = True
+
+    def __init__(self):
+        super(Meson, self).__init__()
+        if self.make:
+            self.make += ' -v'
+        self.make_install = self.make + ' install'
+        self.make_check = self.make + ' test'
+        self.make_clean = self.make + ' clean'
+
+    @modify_environment
+    def configure(self):
+        if not self.config_sh:
+            raise FatalError("The 'meson' build system was not found")
+        if not self.make:
+            raise FatalError("The 'ninja' build system was not found")
+        if os.path.exists(self.make_dir):
+            shutil.rmtree(self.make_dir)
+        os.makedirs(self.make_dir)
+        prefix = to_unixpath(self.config.prefix)
+        libdir = 'lib' + self.config.lib_suffix
+        options = {'config-sh': self.config_sh,
+                   'prefix': prefix,
+                   'libdir': libdir,
+                   'default-library': self.default_library}
+        shell_cmd = self.configure_tpl % options
+        shell.call(shell_cmd, self.make_dir)
+
+
 class BuildType (object):
 
     CUSTOM = CustomBuild
     MAKEFILE = MakefilesBase
     AUTOTOOLS = Autotools
     CMAKE = CMake
+    MESON = Meson
