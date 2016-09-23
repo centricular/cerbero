@@ -1,0 +1,19 @@
+# Pure MSVC toolchain
+# Sets up an environment that gives priority to the MSVC toolchain
+#
+# Please also edit win64-pure-msvc.cbc when updating this file
+
+from cerbero.config import Architecture
+from cerbero.ide.vs.env import vcvarsall, get_msvc_env, set_msvc_env
+
+target_arch = Architecture.X86
+
+if 'visualstudio' not in variants:
+    variants.append('visualstudio')
+
+env = get_msvc_env(vcvarsall, arch, target_arch)
+set_msvc_env(env)
+
+# Tell Cerbero to not set any MinGW or MSYS environment variables
+# See: config/windows.config and cerbero/bootstrap/windows.py:fix_etc_profile
+os.environ['CERBERO_NO_MINGW'] = '1'
