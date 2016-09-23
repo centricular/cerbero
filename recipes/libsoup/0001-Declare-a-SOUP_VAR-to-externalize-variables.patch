@@ -1,0 +1,116 @@
+From e4572a770ecafc807296d9a2eb99e9dea0019887 Mon Sep 17 00:00:00 2001
+From: Ignacio Casal Quinteiro <icq@gnome.org>
+Date: Tue, 27 Oct 2015 13:22:55 +0100
+Subject: [PATCH] Declare a SOUP_VAR to externalize variables
+
+This is needed to properly externalize the variables
+on windows. Since we need to handle dllexport vs dllimport
+
+(backported to 2.52.2 by Nirbheek)
+
+https://bugzilla.gnome.org/show_bug.cgi?id=757146
+---
+ libsoup/soup-method.h     | 30 +++++++++++++++---------------
+ libsoup/soup-uri.h        |  9 +++++----
+ libsoup/soup-version.h.in | 19 +++++++++++++++++++
+ 3 files changed, 39 insertions(+), 19 deletions(-)
+
+diff --git a/libsoup/soup-method.h b/libsoup/soup-method.h
+index 2934cca..cec59e3 100644
+--- a/libsoup/soup-method.h
++++ b/libsoup/soup-method.h
+@@ -58,22 +58,22 @@ G_BEGIN_DECLS
+ /* Do not use these variables directly; use the macros above, which
+  * ensure that they get initialized properly.
+  */
+-extern gpointer _SOUP_METHOD_OPTIONS;
+-extern gpointer _SOUP_METHOD_GET;
+-extern gpointer _SOUP_METHOD_HEAD;
+-extern gpointer _SOUP_METHOD_POST;
+-extern gpointer _SOUP_METHOD_PUT;
+-extern gpointer _SOUP_METHOD_DELETE;
+-extern gpointer _SOUP_METHOD_TRACE;
+-extern gpointer _SOUP_METHOD_CONNECT;
++SOUP_VAR gpointer _SOUP_METHOD_OPTIONS;
++SOUP_VAR gpointer _SOUP_METHOD_GET;
++SOUP_VAR gpointer _SOUP_METHOD_HEAD;
++SOUP_VAR gpointer _SOUP_METHOD_POST;
++SOUP_VAR gpointer _SOUP_METHOD_PUT;
++SOUP_VAR gpointer _SOUP_METHOD_DELETE;
++SOUP_VAR gpointer _SOUP_METHOD_TRACE;
++SOUP_VAR gpointer _SOUP_METHOD_CONNECT;
+ 
+-extern gpointer _SOUP_METHOD_PROPFIND;
+-extern gpointer _SOUP_METHOD_PROPPATCH;
+-extern gpointer _SOUP_METHOD_MKCOL;
+-extern gpointer _SOUP_METHOD_COPY;
+-extern gpointer _SOUP_METHOD_MOVE;
+-extern gpointer _SOUP_METHOD_LOCK;
+-extern gpointer _SOUP_METHOD_UNLOCK;
++SOUP_VAR gpointer _SOUP_METHOD_PROPFIND;
++SOUP_VAR gpointer _SOUP_METHOD_PROPPATCH;
++SOUP_VAR gpointer _SOUP_METHOD_MKCOL;
++SOUP_VAR gpointer _SOUP_METHOD_COPY;
++SOUP_VAR gpointer _SOUP_METHOD_MOVE;
++SOUP_VAR gpointer _SOUP_METHOD_LOCK;
++SOUP_VAR gpointer _SOUP_METHOD_UNLOCK;
+ 
+ G_END_DECLS
+ 
+diff --git a/libsoup/soup-uri.h b/libsoup/soup-uri.h
+index 35e670c..1a81e97 100644
+--- a/libsoup/soup-uri.h
++++ b/libsoup/soup-uri.h
+@@ -39,10 +39,11 @@ GType       soup_uri_get_type              (void);
+ #define SOUP_URI_SCHEME_RESOURCE _SOUP_ATOMIC_INTERN_STRING (_SOUP_URI_SCHEME_RESOURCE, "resource")
+ #define SOUP_URI_SCHEME_WS       _SOUP_ATOMIC_INTERN_STRING (_SOUP_URI_SCHEME_WS, "ws")
+ #define SOUP_URI_SCHEME_WSS      _SOUP_ATOMIC_INTERN_STRING (_SOUP_URI_SCHEME_WSS, "wss")
+-extern gpointer _SOUP_URI_SCHEME_HTTP, _SOUP_URI_SCHEME_HTTPS;
+-extern gpointer _SOUP_URI_SCHEME_FTP;
+-extern gpointer _SOUP_URI_SCHEME_FILE, _SOUP_URI_SCHEME_DATA, _SOUP_URI_SCHEME_RESOURCE;
+-extern gpointer _SOUP_URI_SCHEME_WS, _SOUP_URI_SCHEME_WSS;
++
++SOUP_VAR gpointer _SOUP_URI_SCHEME_HTTP, _SOUP_URI_SCHEME_HTTPS;
++SOUP_VAR gpointer _SOUP_URI_SCHEME_FTP;
++SOUP_VAR gpointer _SOUP_URI_SCHEME_FILE, _SOUP_URI_SCHEME_DATA, _SOUP_URI_SCHEME_RESOURCE;
++SOUP_VAR gpointer _SOUP_URI_SCHEME_WS, _SOUP_URI_SCHEME_WSS;
+ 
+ SoupURI	   *soup_uri_new_with_base         (SoupURI    *base,
+ 					    const char *uri_string);
+diff --git a/libsoup/soup-version.h.in b/libsoup/soup-version.h.in
+index 5c2c7a3..f0775a8 100644
+--- a/libsoup/soup-version.h.in
++++ b/libsoup/soup-version.h.in
+@@ -26,6 +26,29 @@ G_BEGIN_DECLS
+     (SOUP_MAJOR_VERSION == (major) && SOUP_MINOR_VERSION == (minor) && \
+      SOUP_MICRO_VERSION >= (micro)))
+ 
++#ifndef _SOUP_EXTERN
++#define _SOUP_EXTERN extern
++#endif
++
++/* We prefix variable declarations so they can
++ * properly get exported in Windows DLLs.
++ */
++#ifndef SOUP_VAR
++#  ifdef G_PLATFORM_WIN32
++#    ifdef LIBSOUP_COMPILATION
++#      ifdef DLL_EXPORT
++#        define SOUP_VAR __declspec(dllexport)
++#      else /* !DLL_EXPORT */
++#        define SOUP_VAR extern
++#      endif /* !DLL_EXPORT */
++#    else /* !SOUP_COMPILATION */
++#      define SOUP_VAR extern __declspec(dllimport)
++#    endif /* !LIBSOUP_COMPILATION */
++#  else /* !G_PLATFORM_WIN32 */
++#    define SOUP_VAR _SOUP_EXTERN
++#  endif /* !G_PLATFORM_WIN32 */
++#endif /* SOUP_VAR */
++
+ guint    soup_get_major_version (void);
+ 
+ guint    soup_get_minor_version (void);
+-- 
+2.5.0
+
