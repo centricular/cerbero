@@ -32,9 +32,6 @@ class Recipe(custom.GStreamer):
     files_lang = ['gst-plugins-ugly-1.0']
 
     def prepare(self):
-        self.append_env['CFLAGS'] = " -Wno-error "
-        self.append_env['CXXFLAGS'] = " -Wno-error "
-        self.append_env['CPPFLAGS'] = " -Wno-error "
         if self.config.target_platform != Platform.LINUX:
             self.configure_options += ' --disable-gtk-doc'
 
@@ -43,5 +40,11 @@ class Recipe(custom.GStreamer):
                 self.deps.remove(d)
             self.files_plugins_dvd.remove('lib/gstreamer-1.0/libgstdvdread%(mext)s')
 
-        if self.config.variants.nodebug:
-            self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+        if not self.config.variants.visualstudio:
+            self.append_env['CFLAGS'] = " -Wno-error "
+            self.append_env['CXXFLAGS'] = " -Wno-error "
+            self.append_env['CPPFLAGS'] = " -Wno-error "
+            if self.config.variants.nodebug:
+                self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+        elif self.config.variants.nodebug:
+            self.append_env['CFLAGS'] = ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
