@@ -1,0 +1,26 @@
+From aab07a137146663fba93349e2b192367513e6959 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek.chauhan@gmail.com>
+Date: Sat, 19 Mar 2016 01:54:00 +0530
+Subject: [PATCH] Don't define rint on MSVC 2013 and later
+
+Those versions added their own implementation of rint
+---
+ schroedinger/schroutils.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/schroedinger/schroutils.h b/schroedinger/schroutils.h
+index 16c0c55..5f8a491 100644
+--- a/schroedinger/schroutils.h
++++ b/schroedinger/schroutils.h
+@@ -116,7 +116,7 @@ typedef int SchroCUDAStream;
+ #define M_LN10 2.30258509299404568402
+ #endif
+ 
+-#if defined(_MSC_VER)
++#if defined(_MSC_VER) &&_MSC_VER < 1800
+ #define rint(x) (floor((x) + 0.5))
+ #endif
+ 
+-- 
+2.7.2.windows.1
+
