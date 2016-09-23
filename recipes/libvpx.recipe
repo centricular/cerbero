@@ -19,6 +19,7 @@ class Recipe(recipe.Recipe):
     add_host_build_target = False
     supports_cache_variables = False
     can_use_configure_cache = False
+    can_use_msvc_toolchain = True
     make = 'make HAVE_GNU_STRIP=no'
 
     patches = ['libvpx/0001-build-Fix-the-min-version-flag-for-iOS-simulator-bui.patch',
@@ -27,6 +28,8 @@ class Recipe(recipe.Recipe):
                'libvpx/0004-build-Remove-broken-custom-android-toolchain-usage.patch',
                'libvpx/0005-configure-Add-Android-ARM64-support.patch',
                'libvpx/0006-Don-t-embed-bitcode-on-iOS-until-we-support-that-pro.patch',
+               'libvpx/0007-build-Don-t-add-lm-to-Libs-in-the-pkg-config-fil.patch',
+               'libvpx/0008-build-Install-pkg-config-file-when-building-with-Vis.patch',
                ]
 
     files_libs = ['libvpx']
@@ -38,6 +41,8 @@ class Recipe(recipe.Recipe):
 
 
     def prepare (self):
+        # On all platforms other than Windows, we build with GCC
+        compiler = 'gcc'
         if self.config.target_arch == Architecture.X86_64:
             arch = 'x86_64'
         elif self.config.target_arch == Architecture.X86:
@@ -62,6 +67,10 @@ class Recipe(recipe.Recipe):
             if self.config.target_arch == Architecture.ARM:
                 arch = 'armv6'
         elif self.config.target_platform == Platform.WINDOWS:
+            if self.can_use_msvc_toolchain and self.config.variants.visualstudio:
+                # We can't auto-detect the MSVC version used because the
+                # config environment isn't available here
+                compiler = 'vs14'
             if self.config.target_arch == Architecture.X86_64:
                 platform = 'win64'
             else:
@@ -99,7 +108,7 @@ class Recipe(recipe.Recipe):
 
         self.configure_options += ' --disable-examples '
 
-        self.configure_options += '--target=%s-%s-gcc ' % (arch, platform)
+        self.configure_options += '--target={0}-{1}-{2} '.format(arch, platform, compiler)
 
     def configure(self):
         if self.config.target_platform == Platform.ANDROID:
@@ -122,3 +131,19 @@ class Recipe(recipe.Recipe):
             for f in ['vpxenc', 'vpxdec', 'libvpx.a']:
                 shell.touch(os.path.join(self.build_dir, f))
         super(Recipe, self).install()
+
+    def post_install(self):
+        if self.config.target_platform == Platform.WINDOWS and \
+            self.can_use_msvc_toolchain and self.config.variants.visualstudio:
+            # libvpx installs the static library in MSVC-specific directories
+            # and with names based on the args passed to the MSVC compiler.
+            # It needs to be moved into libdir and renamed so it can be found.
+            # XXX: The build system is an unholy mess of shell scripts and make
+            # so we're doing the move here in post_install()
+            if self.config.target_arch == Architecture.X86_64:
+                subdir = 'x64'
+            else:
+                subdir = 'Win32'
+            shutil.move(os.path.join(self.config.libdir, subdir, 'vpxmd.lib'),
+                        os.path.join(self.config.libdir, 'vpx.lib'))
+            os.rmdir(os.path.join(self.config.libdir, subdir))
