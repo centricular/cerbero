@@ -438,6 +438,9 @@ class Meson (MakefilesBase):
 
     def __init__(self):
         super(Meson, self).__init__()
+        # HACK: Override a value that might be set by the recipe
+        #       Temporarily till we add conditional config_sh support
+        self.config_sh = None
 
     def find_build_tools(self):
         '''
