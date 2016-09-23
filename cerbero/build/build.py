@@ -19,7 +19,7 @@
 import os
 
 from cerbero.config import Platform, Architecture, Distro
-from cerbero.utils import shell, to_unixpath, add_system_libs
+from cerbero.utils import shell, add_system_libs
 from cerbero.utils import messages as m
 from cerbero.errors import FatalError
 import shutil
@@ -152,8 +152,8 @@ class MakefilesBase (Build):
             self.config_sh = os.path.join('../', self.config_sh)
 
         shell.call(self.configure_tpl % {'config-sh': self.config_sh,
-            'prefix': to_unixpath(self.config.prefix),
-            'libdir': to_unixpath(self.config.libdir),
+            'prefix': self.config.prefix,
+            'libdir': self.config.libdir,
             'host': self.config.host,
             'target': self.config.target,
             'build': self.config.build,
@@ -395,7 +395,7 @@ class Meson (MakefilesBase):
         if os.path.exists(self.make_dir):
             shutil.rmtree(self.make_dir)
         os.makedirs(self.make_dir)
-        prefix = to_unixpath(self.config.prefix)
+        prefix = self.config.prefix
         libdir = 'lib' + self.config.lib_suffix
         options = {'config-sh': self.config_sh,
                    'prefix': prefix,
