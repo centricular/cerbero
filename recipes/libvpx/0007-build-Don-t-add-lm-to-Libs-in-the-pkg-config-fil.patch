@@ -1,0 +1,27 @@
+From 0ac7a0cd2c119c5faa54d72e4bb91e06cb28cdd5 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek.chauhan@gmail.com>
+Date: Fri, 18 Mar 2016 19:33:57 +0530
+Subject: [PATCH] build: Don't add -lm to Libs in the pkg-config file
+
+It only needs to be explicitly listed while building a static library, so
+it is only needed in Libs.private
+---
+ libs.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libs.mk b/libs.mk
+index f28d84a..22877a2 100644
+--- a/libs.mk
++++ b/libs.mk
+@@ -353,7 +353,7 @@ vpx.pc: config.mk libs.mk
+ 	$(qexec)echo 'Version: $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)' >> $@
+ 	$(qexec)echo 'Requires:' >> $@
+ 	$(qexec)echo 'Conflicts:' >> $@
+-	$(qexec)echo 'Libs: -L$${libdir} -lvpx -lm' >> $@
++	$(qexec)echo 'Libs: -L$${libdir} -lvpx' >> $@
+ ifeq ($(HAVE_PTHREAD_H),yes)
+ 	$(qexec)echo 'Libs.private: -lm -lpthread' >> $@
+ else
+-- 
+2.7.2.windows.1
+
