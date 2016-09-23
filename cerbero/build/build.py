@@ -36,6 +36,7 @@ class Build (object):
     @type config: L{cerbero.config.Config}
     '''
 
+    can_use_msvc_toolchain = False
     _properties_keys = []
 
     def configure(self):
@@ -83,6 +84,13 @@ def modify_environment(func):
         new_env = self.new_env.copy()
         if self.use_system_libs and self.config.allow_system_libs:
             self._add_system_libs(new_env)
+        # If this recipe can be built with MSVC and we want it to be
+        if self.can_use_msvc_toolchain and self.config.variants.visualstudio:
+            # Unset variables pointing to the MinGW/GCC toolchain so that
+            # the MSVC toolchain is auto-detected instead.
+            if os.environ.has_key('CERBERO_MSVC_UNSET_VARS'):
+                for var in os.environ['CERBERO_MSVC_UNSET_VARS'].split():
+                    new_env[var] = None
         old_env = self._modify_env(append_env, new_env)
         res = func(*args)
         self._restore_env(old_env)
@@ -368,6 +376,7 @@ class Meson (MakefilesBase):
     autodetect_jobs = False
     default_library = 'shared'
     requires_non_src_build = True
+    can_use_msvc_toolchain = True
 
     def __init__(self):
         super(Meson, self).__init__()

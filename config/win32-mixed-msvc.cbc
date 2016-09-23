@@ -1,0 +1,16 @@
+# Mixed toolchain MinGW/GCC + MSVC
+# Sets up an environment that allows recipes to choose whether they want to
+# build using MinGW/GCC or MSVC
+#
+# Please also edit win64-mixed-msvc.cbc when updating this file
+
+from cerbero.config import Architecture
+from cerbero.ide.vs.env import vcvarsall, get_msvc_env, set_msvc_env
+
+target_arch = Architecture.X86
+
+if 'visualstudio' not in variants:
+    variants.append('visualstudio')
+
+env = get_msvc_env(vcvarsall, arch, target_arch)
+set_msvc_env(env)

@@ -19,6 +19,7 @@
 import os
 import tempfile
 import shutil
+import os.path as osp
 
 from cerbero.bootstrap import BootstrapperBase
 from cerbero.bootstrap.bootstrapper import register_bootstrapper
@@ -69,6 +70,7 @@ class WindowsBootstrapper(BootstrapperBase):
         if self.platform == Platform.WINDOWS:
             # After mingw is beeing installed
             self.install_bin_deps()
+            self.fix_etc_profile()
         self.install_gl_headers()
         self.install_python_sdk()
 
@@ -151,6 +153,20 @@ class WindowsBootstrapper(BootstrapperBase):
             shell.replace(os.path.join(self.config.toolchain_prefix, f),
                           {'/opt/perl/bin/perl': '/bin/perl'})
         return
+
+    def fix_etc_profile(self):
+        '''
+        /etc/profile by default pre-pends '.:/usr/local/bin:/mingw/bin:/bin:' to
+        PATH which gives higher priority to MSYS binaries over MSVC binaries.
+        So, we get rid of this pre-pended path if requested.
+        '''
+        # root directory is `~/../..` -> `$ROOT/home/$USER/../..`
+        root = osp.abspath(osp.join(osp.expanduser('~'), '..', '..'))
+        profile_d = osp.join(root, 'etc', 'profile.d')
+        if not osp.isdir(profile_d):
+            os.mkdir(profile_d)
+        with open(osp.join(profile_d, '99-dont-add-msys-paths.sh'), 'w') as f:
+            f.write('[[ -n $CERBERO_NO_MINGW ]] && export PATH=${PATH##*:/bin:}')
 
     def fix_lib_paths(self):
         orig_sysroot = self.find_mingw_sys_root()
