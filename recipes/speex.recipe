@@ -17,3 +17,10 @@ class Recipe(recipe.Recipe):
     def prepare(self):
         if self.config.target_platform == Platform.ANDROID:
             self.autoreconf = True
+
+    def post_install(self):
+        if self.config.target_platform == Platform.WINDOWS:
+            # We need to do this so MSVC can find data symbols in the generated DLL
+            # GCC also supports __declspec(dllimport)
+            shell.replace(os.path.join(self.config.prefix, 'include', 'speex', 'speex.h'),
+                          {'extern const': '__declspec(dllimport) const'})
