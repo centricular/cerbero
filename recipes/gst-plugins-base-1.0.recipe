@@ -116,9 +116,6 @@ class Recipe(custom.GStreamer):
         ]
 
     def prepare(self):
-        self.append_env['CFLAGS'] = " -Wno-error "
-        self.append_env['CXXFLAGS'] = " -Wno-error "
-        self.append_env['CPPFLAGS'] = " -Wno-error "
         if self.config.target_platform != Platform.LINUX:
             self.configure_options += '--disable-gtk-doc '
 
@@ -141,5 +138,11 @@ class Recipe(custom.GStreamer):
         else:
             self.configure_options += ' --disable-alsa'
 
-        if self.config.variants.nodebug:
-            self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+        if not self.config.variants.visualstudio:
+            self.append_env['CFLAGS'] = " -Wno-error "
+            self.append_env['CXXFLAGS'] = " -Wno-error "
+            self.append_env['CPPFLAGS'] = " -Wno-error "
+            if self.config.variants.nodebug:
+                self.append_env['CFLAGS'] += ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'
+        elif self.config.variants.nodebug:
+            self.append_env['CFLAGS'] = ' -DGST_LEVEL_MAX=GST_LEVEL_FIXME'

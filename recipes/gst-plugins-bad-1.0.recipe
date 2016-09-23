@@ -214,10 +214,13 @@ class Recipe(custom.GStreamer):
     files_plugins_sys  = []
 
     def prepare(self):
-        self.append_env['CFLAGS'] = " -Wno-error -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 "
-        self.append_env['OBJCFLAGS'] = " -Wno-error -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 "
-        self.append_env['CXXFLAGS'] = " -Wno-error "
-        self.append_env['CPPFLAGS'] = " -Wno-error "
+        self.append_env['CFLAGS'] = " -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 "
+        self.append_env['OBJCFLAGS'] = " -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 "
+        if not self.config.variants.visualstudio:
+            self.append_env['CFLAGS'] += " -Wno-error "
+            self.append_env['OBJCFLAGS'] += " -Wno-error "
+            self.append_env['CXXFLAGS'] = " -Wno-error "
+            self.append_env['CPPFLAGS'] = " -Wno-error "
 
         if self.config.variants.gtk3:
             self.deps.append("gtk+3")
