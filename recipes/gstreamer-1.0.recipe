@@ -60,6 +60,7 @@ class Recipe(custom.GStreamer):
 
 
     def prepare(self):
+        self.meson_options += '-Ddisable_gtkdoc=true'
         if self.config.target_platform != Platform.LINUX:
             self.configure_options += ' --disable-gtk-doc --disable-docbook'
 
