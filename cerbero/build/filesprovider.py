@@ -70,11 +70,13 @@ class FilesProvider(object):
     # some packages like Nettle add 2, so we check for upto 2. We don't use
     # {m,n} here because we want to capture all the matches.
     _DLL_REGEX = r'^(lib)?{}(-[0-9]+)?(-[0-9]+)?\.dll$'
-    # UNIX shared libraries can have between 0 and 3 version components:
+    # Linux shared libraries can have between 0 and 3 version components:
     # major, minor, micro. We don't use {m,n} here because we want to capture
     # all the matches.
     _SO_REGEX = r'^lib{}\.so(\.[0-9]+)?(\.[0-9]+)?(\.[0-9]+)?$'
-    _DYLIB_REGEX = r'^lib{}(\.[0-9]+)?(\.[0-9]+)?(\.[0-9]+)?\.dylib$'
+    # macOS dynamic libraries have atmost one version component: the major
+    # version. The rest is encoded inside the file itself.
+    _DYLIB_REGEX = r'^lib{}(\.[0-9]+)?\.dylib$'
 
     # Extension Glob Legend:
     # bext = binary extension
