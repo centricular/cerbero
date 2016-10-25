@@ -426,9 +426,10 @@ class Meson (MakefilesBase):
     http://mesonbuild.com
 
     '''
-    configure_tpl = '%(config-sh)s --prefix=%(prefix)s --libdir=%(libdir)s \
+    meson_options = ''
+    meson_tpl = '%(config-sh)s --prefix=%(prefix)s --libdir=%(libdir)s \
             --default-library=%(default-library)s --buildtype=%(buildtype)s \
-            --backend=%(backend)s ..'
+            --backend=%(backend)s .. %(meson-options)s'
     make = None
     make_install = None
     make_check = None
@@ -495,8 +496,9 @@ class Meson (MakefilesBase):
                    'libdir': libdir,
                    'default-library': self.default_library,
                    'buildtype': buildtype,
-                   'backend': self.meson_backend,}
-        shell_cmd = self.configure_tpl % options
+                   'backend': self.meson_backend,
+                   'meson-options': self.meson_options,}
+        shell_cmd = self.meson_tpl % options
         if self.config.cross_compiling():
             using_msvc = self.can_use_msvc_toolchain and \
                 self.config.variants.visualstudio
