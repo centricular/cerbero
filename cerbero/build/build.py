@@ -349,8 +349,12 @@ class CMake (MakefilesBase):
 
     @modify_environment
     def configure(self):
-        cc = os.environ.get('CC', 'gcc')
-        cxx = os.environ.get('CXX', 'g++')
+        if self.can_use_msvc_toolchain:
+            cc = 'cl.exe'
+            cxx = 'cl.exe'
+        else:
+            cc = os.environ.get('CC', 'gcc')
+            cxx = os.environ.get('CXX', 'g++')
         cflags = os.environ.get('CFLAGS', '')
         cxxflags = os.environ.get('CXXFLAGS', '')
         # FIXME: CMake doesn't support passing "ccache $CC"
