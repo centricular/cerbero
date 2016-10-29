@@ -15,10 +15,3 @@ class Recipe(recipe.Recipe):
     files_devel = ['include/orc-0.4', 'lib/pkgconfig/orc-0.4.pc',
         'bin/orc-bugreport%(bext)s', 'share/aclocal/orc.m4',
         'bin/orcc%(bext)s']
-
-    def prepare(self):
-        if self.config.target_platform == Platform.WINDOWS and \
-           self.config.target_arch == Architecture.X86_64:
-            # Code compiled with ORC crashes when built with 64-bit MSVC
-            # but works fine with 64-bit MinGW/GCC
-            self.can_use_msvc_toolchain = False
