@@ -143,8 +143,7 @@ class CookBook (object):
         @return: list of recipes
         @rtype: list
         '''
-        recipes = self.recipes.values()
-        recipes.sort(key=lambda x: x.name)
+        recipes = list(self.recipes.values())
         return recipes
 
     def add_recipe(self, recipe):
@@ -294,7 +293,7 @@ class CookBook (object):
                 os.makedirs(os.path.dirname(cache_file))
             with open(cache_file, 'wb') as f:
                 pickle.dump(self.status, f)
-        except IOError, ex:
+        except IOError as ex:
             m.warning(_("Could not cache the CookBook: %s") % ex)
 
     def _find_deps(self, recipe, state={}, ordered=[]):
@@ -309,7 +308,7 @@ class CookBook (object):
         for recipe_name in recipe_deps:
             try:
                 recipedep = self.get_recipe(recipe_name)
-            except RecipeNotFoundError, e:
+            except RecipeNotFoundError as e:
                 raise FatalError(_("Recipe %s has a unknown dependency %s"
                                  % (recipe.name, recipe_name)))
             try:
@@ -335,7 +334,7 @@ class CookBook (object):
         self.recipes = {}
         recipes = defaultdict(dict)
         recipes_repos = self._config.get_recipes_repos()
-        for reponame, (repodir, priority) in recipes_repos.iteritems():
+        for reponame, (repodir, priority) in recipes_repos.items():
             recipes[int(priority)].update(self._load_recipes_from_dir(repodir))
         # Add recipes by asceding pripority
         for key in sorted(recipes.keys()):
@@ -419,9 +418,9 @@ class CookBook (object):
                     recipe.add_recipe(r)
                 else:
                     return r
-            except InvalidRecipeError, e:
+            except InvalidRecipeError as e:
                 self._invalid_recipes[r.name] = e
-            except Exception, ex:
+            except Exception as ex:
                 m.warning("Error loading recipe in file %s %s" %
                           (filepath, ex))
         if self._config.target_arch == Architecture.UNIVERSAL:

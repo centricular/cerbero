@@ -62,7 +62,7 @@ class CheckPackage(Command):
                 try:
                     m.message('Running checks for recipe %s' % recipe.name)
                     stepfunc()
-                except Exception, ex:
+                except Exception as ex:
                     failed.append(recipe.name)
                     m.warning(_("%s checks failed: %s") % (recipe.name, ex))
         if failed:

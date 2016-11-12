@@ -188,7 +188,7 @@ class Config (object):
 
         self.env = self.get_env(self.prefix, libdir, self.py_prefix)
         # set all the variables
-        for e, v in self.env.iteritems():
+        for e, v in self.env.items():
             os.environ[e] = v
 
     def get_env(self, prefix, libdir, py_prefix):
@@ -340,14 +340,14 @@ class Config (object):
 
     def get_recipes_repos(self):
         recipes_dir = {'default': (self.recipes_dir, 0)}
-        for name, (path, priority) in self.external_recipes.iteritems():
+        for name, (path, priority) in self.external_recipes.items():
             path = os.path.abspath(os.path.expanduser(path))
             recipes_dir[name] = (path, priority)
         return recipes_dir
 
     def get_packages_repos(self):
         packages_dir = {'default': (self.packages_dir, 0)}
-        for name, (path, priority) in self.external_packages.iteritems():
+        for name, (path, priority) in self.external_packages.items():
             path = os.path.abspath(os.path.expanduser(path))
             packages_dir[name] = (path, priority)
         return packages_dir
@@ -498,7 +498,7 @@ class Config (object):
     def _perl_version(self):
         version = shell.check_call("perl -e 'print \"$]\";'")
         # FIXME: when perl's mayor is >= 10
-        mayor = version[0]
+        major = str(version[0])
         minor = str(int(version[2:5]))
         revision = str(int(version[5:8]))
-        return '.'.join([mayor, minor, revision])
+        return '.'.join([major, minor, revision])

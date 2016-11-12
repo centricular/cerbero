@@ -93,7 +93,7 @@ class LinuxPackagesTest(unittest.TestCase):
                  'universal_archs': [cconfig.Architecture.X86, cconfig.Architecture.X86_64],
                  }
         self.assertEquals(sorted(config._properties), sorted(props.keys()))
-        for p, v in props.iteritems():
+        for p, v in props.items():
             self.assertEquals(getattr(config, p), v)
 
     def testLoadMainConfig(self):
@@ -145,7 +145,7 @@ class LinuxPackagesTest(unittest.TestCase):
         config.do_setup_env()
         env = config.get_env(tmpdir, os.path.join(tmpdir, 'lib'),
                              config.py_prefix)
-        for k, v in env.iteritems():
+        for k, v in env.items():
             self.assertEquals(os.environ[k], v)
 
     def testParseBadConfigFile(self):

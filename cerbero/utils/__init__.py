@@ -35,6 +35,12 @@ from cerbero.enums import Platform, Architecture, Distro, DistroVersion
 from cerbero.errors import FatalError
 from cerbero.utils import messages as m
 
+def exec_file(filename, *args):
+    if (sys.version_info > (3, 0)):
+        exec(compile(open(filename, "rb").read(), filename, 'exec'), *args)
+    else:
+        execfile(filename, *args)
+
 _ = gettext.gettext
 N_ = lambda x: x
 
@@ -283,8 +289,8 @@ def remove_list_duplicates(seq):
 
 def parse_file(filename, dict):
     try:
-        execfile(filename, dict)
-    except Exception, ex:
+        exec_file(filename, dict)
+    except Exception as ex:
         import traceback
         traceback.print_exc()
         raise ex

@@ -16,6 +16,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+from __future__ import print_function
 import logging
 import subprocess
 import shlex
@@ -42,7 +43,6 @@ TAR = 'tar'
 PLATFORM = system_info()[0]
 LOGFILE = None  # open('/tmp/cerbero.log', 'w+')
 DRY_RUN = False
-
 
 def set_logfile_output(location):
     '''
@@ -74,7 +74,7 @@ def close_logfile_output(dump=False):
         while True:
             data = LOGFILE.read()
             if data:
-                print data
+                print(data)
             else:
                 break
     # if logfile is empty, remove it
@@ -249,7 +249,7 @@ def download(url, destination=None, recursive=False, check_cert=True):
             logging.info("Downloading %s", url)
         try:
             call(cmd, path)
-        except FatalError, e:
+        except FatalError as e:
             os.remove(destination)
             raise e
 
@@ -286,7 +286,7 @@ def download_curl(url, destination=None, recursive=False, check_cert=True):
         logging.info("Downloading %s", url)
         try:
             call(cmd, path)
-        except FatalError, e:
+        except FatalError as e:
             os.remove(destination)
             raise e
 
@@ -346,7 +346,7 @@ def replace(filepath, replacements):
     ''' Replaces keys in the 'replacements' dict with their values in file '''
     with open(filepath, 'r') as f:
         content = f.read()
-    for k, v in replacements.iteritems():
+    for k, v in replacements.items():
         content = content.replace(k, v)
     with open(filepath, 'w+') as f:
         f.write(content)

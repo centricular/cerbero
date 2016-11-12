@@ -70,7 +70,7 @@ if __name__ == "__main__":
     try:
         p2v = PkgConfig2VSProps(args.library, args.c)
         p2v.create(args.o)
-    except Exception, e:
+    except Exception as e:
         import traceback
         traceback.print_exc()
         m.error(str(e))

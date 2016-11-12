@@ -23,7 +23,7 @@ import sys
 ### XML Hacks ###
 
 import re
-import StringIO
+from io import StringIO
 from xml.dom import minidom
 from cerbero.utils import etree
 oldwrite = etree.ElementTree.write
@@ -60,14 +60,28 @@ etree.ElementTree.write = write
 # but we need lowercase ones to override configure options like
 # am_cv_python_platform
 
+py3 = False
 environclass = os.environ.__class__
-import UserDict
+try:
+    import UserDict
+except ImportError:
+    py3 = True
 
 
 class _Environ(environclass):
 
     def __init__(self, environ):
-        UserDict.UserDict.__init__(self)
+        if py3:
+            super(_Environ, self).__init__(environ,
+                                           os.environ.encodekey,
+                                           os.environ.decodekey,
+                                           os.environ.encodevalue,
+                                           os.environ.decodevalue,
+                                           os.environ.putenv,
+                                           os.environ.unsetenv,
+                                           )
+        else:
+            UserDict.UserDict.__init__(self)
         self.data = {}
         for k, v in environ.items():
             self.data[k] = v

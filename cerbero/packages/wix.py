@@ -393,7 +393,7 @@ class MSI(WixBase):
                                        required_packages)
 
         # Add a merge module ref for all the packages
-        for package, path in self.packages_deps.iteritems():
+        for package, path in self.packages_deps.items():
             etree.SubElement(self.installdir, 'Merge',
                 Id=self._package_id(package.name), Language='1033',
                 SourceFile=path, DiskId='1')

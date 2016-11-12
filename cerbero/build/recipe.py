@@ -339,7 +339,7 @@ class UniversalRecipe(object):
             stepfunc()
             return
 
-        for arch, recipe in self._recipes.iteritems():
+        for arch, recipe in self._recipes.items():
             config = self._config.arch_config[arch]
             config.do_setup_env()
             stepfunc = getattr(recipe, step)
@@ -365,7 +365,7 @@ class UniversalFlatRecipe(UniversalRecipe):
 
     def merge(self):
         arch_inputs = {}
-        for arch, recipe in self._recipes.iteritems():
+        for arch, recipe in self._recipes.items():
             # change the prefix temporarly to the arch prefix where files are
             # actually installed
             recipe.config.prefix = os.path.join(self.config.prefix, arch)
@@ -401,7 +401,7 @@ class UniversalFlatRecipe(UniversalRecipe):
 
         archs_prefix = self._recipes.keys()
 
-        for arch, recipe in self._recipes.iteritems():
+        for arch, recipe in self._recipes.items():
             config = self._config.arch_config[arch]
             config.do_setup_env()
             stepfunc = getattr(recipe, step)

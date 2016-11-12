@@ -110,7 +110,10 @@ def modify_environment(func):
         self._restore_env(old_env)
         return res
 
-    call.func_name = func.func_name
+    try:
+        call.func_name = func.func_name
+    except:
+        call.__name__ = func.__name__
     return call
 
 
@@ -200,13 +203,13 @@ class MakefilesBase (Build):
         for var in append_env.keys() + new_env.keys():
             self._old_env[var] = os.environ.get(var, None)
 
-        for var, val in append_env.iteritems():
+        for var, val in append_env.items():
             if not os.environ.has_key(var):
                 os.environ[var] = val
             else:
                 os.environ[var] = '%s %s' % (os.environ[var], val)
 
-        for var, val in new_env.iteritems():
+        for var, val in new_env.items():
             if val is None:
                 if var in os.environ:
                     del os.environ[var]
@@ -219,7 +222,7 @@ class MakefilesBase (Build):
         if old_env is None:
             return
 
-        for var, val in old_env.iteritems():
+        for var, val in old_env.items():
             if val is None:
                 if var in os.environ:
                     del os.environ[var]
@@ -289,7 +292,7 @@ class Autotools (MakefilesBase):
             # On windows, environment variables are upperscase, but we still
             # need to pass things like am_cv_python_platform in lowercase for
             # configure and autogen.sh
-            for k, v in os.environ.iteritems():
+            for k, v in os.environ.items():
                 if k[2:6] == '_cv_':
                     self.configure_tpl += ' %s="%s"' % (k, v)
 

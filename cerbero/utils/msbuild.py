@@ -73,5 +73,5 @@ class MSBuild(object):
 
     def _format_properties(self):
         props = ['/property:%s=%s' % (k, v) for k, v in
-                 self.properties.iteritems()]
+                 self.properties.items()]
         return ' '.join(props)
