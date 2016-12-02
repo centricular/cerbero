@@ -165,8 +165,7 @@ class WindowsBootstrapper(BootstrapperBase):
         profile_d = osp.join(root, 'etc', 'profile.d')
         if not osp.isdir(profile_d):
             os.mkdir(profile_d)
-        with open(osp.join(profile_d, '99-dont-add-msys-paths.sh'), 'w') as f:
-            f.write('[[ -n $CERBERO_NO_MINGW ]] && export PATH=${PATH##*:/bin:}')
+        shutil.copy('99-dont-add-msys-paths.sh', profile_d)
 
     def fix_lib_paths(self):
         orig_sysroot = self.find_mingw_sys_root()
