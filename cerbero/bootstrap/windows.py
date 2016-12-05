@@ -165,7 +165,8 @@ class WindowsBootstrapper(BootstrapperBase):
         profile_d = osp.join(root, 'etc', 'profile.d')
         if not osp.isdir(profile_d):
             os.mkdir(profile_d)
-        shutil.copy('99-dont-add-msys-paths.sh', profile_d)
+        curdir = os.path.dirname(os.path.abspath(__file__))
+        shutil.copy(os.path.join(curdir, '99-dont-add-msys-paths.sh'), profile_d)
 
     def fix_lib_paths(self):
         orig_sysroot = self.find_mingw_sys_root()
