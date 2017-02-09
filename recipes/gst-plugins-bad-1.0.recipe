@@ -227,6 +227,7 @@ class Recipe(custom.GStreamer):
             # Portability issues with MSVC
             self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgstspandsp%(mext)s')
             self.files_plugins_effects.remove('lib/gstreamer-1.0/libgstsoundtouch%(mext)s')
+            self.files_plugins_effects.remove('lib/gstreamer-1.0/libgstwebrtcdsp%(mext)s')
 
         if self.config.target_platform != Platform.LINUX:
             self.configure_options += '--disable-gtk-doc '
