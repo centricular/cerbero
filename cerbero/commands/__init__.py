@@ -17,7 +17,7 @@
 # Boston, MA 02111-1307, USA.
 
 
-__all__ = ['Command', 'register_command', 'run']
+__all__ = ['Command', 'register_command', 'run', 'set_buildtype']
 
 
 from cerbero.errors import FatalError
@@ -76,3 +76,26 @@ def run(command, config, args):
         raise FatalError(_('command not found'))
 
     return _commands[command].run(config, args)
+
+def set_buildtype(config, buildtype):
+    msg = 'Build type is '
+    if buildtype == 'debug':
+        msg += 'debug'
+        setattr(config.variants, 'debug', True)
+        setattr(config.variants, 'nodebug', False)
+    elif buildtype == 'release':
+        msg += 'release'
+        setattr(config.variants, 'debug', False)
+        setattr(config.variants, 'nodebug', True)
+    elif buildtype == 'debugoptimized':
+        msg += 'debugoptimized'
+        setattr(config.variants, 'debug', None)
+        setattr(config.variants, 'nodebug', None)
+    else:
+        if config.variants.debug:
+            msg += 'debug (configuration)'
+        elif config.variants.nodebug:
+            msg += 'release (configuration)'
+        else:
+            msg += 'debugoptimized (default)'
+    m.message(msg)
