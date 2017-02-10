@@ -19,7 +19,7 @@
 import os
 
 from cerbero.config import Platform
-from cerbero.commands import Command, register_command, build
+from cerbero.commands import Command, register_command, build, set_buildtype
 from cerbero.utils import _, N_, ArgparseArgument
 from cerbero.utils import messages as m
 from cerbero.errors import PackageNotFoundError, UsageError
@@ -44,6 +44,9 @@ class Package(Command):
                 default=None,
                 help=_('stores debug symbols from PDBs and binaries built with '
                        'MSVC at the specified location (default: no)')),
+            ArgparseArgument('--buildtype', default=None,
+                             help=_('specifies the build type: "debug", "release" '
+                             'or "debugoptimized" (default)')),
             ArgparseArgument('-t', '--tarball', action='store_true',
                 default=False,
                 help=_('Creates a tarball instead of a native package')),
@@ -71,6 +74,7 @@ class Package(Command):
 
     def run(self, config, args):
         self.ssp = None
+        set_buildtype(config, args.buildtype)
         self.store = PackagesStore(config)
         p = self.store.get_package(args.package[0])
 
