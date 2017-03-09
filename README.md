@@ -35,6 +35,7 @@ do this once. Please follow the instructions here **carefully**.
   * Python 2.7: https://www.python.org/downloads/
    * IMPORTANT: Download 64-bit if you're running 64-bit Windows and 32-bit otherwise
    * Install it for all users
+   * Add Python 2.7 to `PATH`
    * Don't select pip and don't register extensions
    * Inside `C:\Python27`, rename `python.exe` to `python2.exe`
     * This is needed to avoid a collision with Python 3
@@ -66,6 +67,7 @@ do this once. Please follow the instructions here **carefully**.
 
   * MSYS/MinGW: http://sourceforge.net/projects/mingw/files/Installer/mingw-get-setup.exe/download
    * Install it with all the options enabled
+   * You will be using the MinGW shell installed in this step for running all commands
 
 Once the MSYS installation finishes, the MinGW Installation Manager will be
 started. You must select only `mingw-developer-toolkit` and `msys-base`, and
@@ -90,6 +92,10 @@ Despite the presence of `setup.py` this tool does not need installation. It is
 usually invoked via the cerbero-uninstalled script, which should be invoked as
 `./cerbero-uninstalled`, or you can add the cerbero directory in your `PATH`
 and invoke it as `cerbero-uninstalled`.
+
+Note that on Windows you must run all these commands from inside the MinGW
+shell that you installed as part of the minimum requirements. If you get errors
+running `./cerbero-uninstalled`, run it with `python2` instead.
 
 #### Bootstrap
 
