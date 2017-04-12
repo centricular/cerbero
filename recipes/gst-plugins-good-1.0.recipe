@@ -106,7 +106,10 @@ class Recipe(custom.GStreamer):
         # Work around use of deprecated NSOpenGLPFAFullScreen on OS X 10.10
         self.append_env['CFLAGS'] = " -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 -DLIBSOUP_DOES_NOT_STEAL_OUR_CONTEXT=1 "
         self.append_env['OBJCFLAGS'] = " -DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1 "
-        if not self.config.variants.visualstudio:
+        if self.config.variants.visualstudio:
+            # Taglib plugin is disabled with Meson, so don't expect it to exist
+            self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgsttaglib%(mext)s')
+        else:
             self.append_env['CFLAGS'] += " -Wno-error -Wno-error=deprecated-declarations "
             self.append_env['OBJCFLAGS'] += " -Wno-error "
             self.append_env['CXXFLAGS'] = " -Wno-error -Wno-error=deprecated-declarations "
