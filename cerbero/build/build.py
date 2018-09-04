@@ -467,7 +467,7 @@ class Meson (Build, ModifyEnvBase) :
     meson_default_library = 'both'
     meson_backend = 'ninja'
     # All meson recipes are MSVC-compatible, except if the code itself isn't
-    can_msvc = True
+    can_msvc = False
 
     def __init__(self):
         self.meson_options = self.meson_options or {}

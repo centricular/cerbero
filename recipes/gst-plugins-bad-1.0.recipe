@@ -7,20 +7,9 @@ class Recipe(custom.GStreamer):
     btype = BuildType.MESON
     # Explicitly enable plugins that we provide dependencies for to ensure that
     # we error out if they weren't found.
-    meson_options = {'examples': 'disabled', 'gtk_doc': 'disabled', 'bz2': 'enabled',
-                     'assrender': 'enabled', 'kate': 'enabled', 'openh264': 'enabled',
-                     'opus': 'enabled', 'hls': 'enabled', 'rtmp': 'enabled',
-                     'srtp': 'enabled', 'dts': 'enabled', 'libmms': 'enabled',
-                     'resindvd': 'enabled', 'soundtouch': 'enabled', 'openjpeg': 'enabled',
-                     'voaacenc': 'enabled', 'rsvg': 'enabled', 'openglmixers': 'enabled',
-                     'spandsp': 'enabled', 'decklink': 'enabled', 'webrtc': 'enabled',
-                     'dtls': 'enabled', 'srt': 'enabled', 'webrtcdsp': 'enabled'}
+    meson_options = {'examples': 'disabled', 'gtk_doc': 'disabled'}
     remotes = {'origin': 'https://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad'}
-    deps = ['gstreamer-1.0', 'gst-plugins-base-1.0', 'bzip2', 'libass',
-            'libkate', 'zlib', 'openh264', 'opus', 'nettle', 'librtmp',
-            'libsrtp', 'libdca', 'libmms', 'libdvdnav', 'libnice',
-            'soundtouch', 'vo-aacenc', 'librsvg', 'openjpeg', 'openssl',
-            'spandsp', 'webrtc-audio-processing', 'sbc', 'ladspa', 'srt']
+    deps = ['gstreamer-1.0', 'gst-plugins-base-1.0']
     use_system_libs = True
 
     files_lang = ['gst-plugins-bad-1.0']
@@ -357,7 +346,7 @@ class Recipe(custom.GStreamer):
             # FIXME: This will almost certainly fail to build on Windows due to
             # https://bugzilla.gnome.org/show_bug.cgi?id=770264
             # See also, gstreamer-1.0-effects.package
-            self.deps.remove('webrtc-audio-processing')
+            #self.deps.remove('webrtc-audio-processing')
             self.files_plugins_effects.remove('lib/gstreamer-1.0/libgstwebrtcdsp%(mext)s')
             self.files_plugins_effects_devel.remove('lib/gstreamer-1.0/libgstwebrtcdsp.a')
             self.files_plugins_effects_devel.remove('lib/gstreamer-1.0/libgstwebrtcdsp.la')
