@@ -7,6 +7,7 @@ class Recipe(custom.GStreamer):
     name = 'gst-libav-1.0'
     licenses = [License.LGPLv2Plus]
     autoreconf = True
+    can_msvc = False
     autoreconfig_sh = './autogen.sh --noconfigure'
     configure_options = "--disable-gpl --enable-static --disable-gtk-doc \
         --disable-fatal-warnings "
