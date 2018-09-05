@@ -204,6 +204,15 @@ class Recipe(custom.GStreamer):
         self.append_env('CFLAGS', '-DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1', '-DLIBSOUP_DOES_NOT_STEAL_OUR_CONTEXT=1')
         self.append_env('OBJCFLAGS', '-DGSTREAMER_GLIB_COCOA_NSAPPLICATION=1')
 
+        if self.config.platform == Platform.WINDOWS and self.can_msvc:
+            # FIXME: dv plugin fails to link with msvc, wants pthread.lib
+            # FIXME: taglib plugin fails to compile and link with msvc
+            for p in ('dv', 'taglib'):
+                self.meson_options[p] = 'disabled'
+                self.files_plugins_codecs.remove('lib/gstreamer-1.0/libgst' + p + '%(mext)s')
+                self.files_plugins_codecs_devel.remove('lib/gstreamer-1.0/libgst' + p + '.la')
+                self.files_plugins_codecs_devel.remove('lib/gstreamer-1.0/libgst' + p + '.a')
+
         if self.config.target_platform == Platform.LINUX:
             self.use_system_libs = True
 

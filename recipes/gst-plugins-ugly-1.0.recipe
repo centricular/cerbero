@@ -45,6 +45,12 @@ class Recipe(custom.GStreamer):
     files_lang = ['gst-plugins-ugly-1.0']
 
     def prepare(self):
+        if self.config.platform == Platform.WINDOWS and self.can_msvc:
+            # FIXME: Syntax error in dvd_reader.h
+            self.meson_options['dvdread'] = 'disabled'
+            self.files_plugins_dvd = []
+            self.files_plugins_dvd_devel = []
+
         if self.config.target_platform in [ Platform.ANDROID, Platform.IOS ]:
             self.deps.remove('libdvdread')
             self.files_plugins_dvd.remove('lib/gstreamer-1.0/libgstdvdread%(mext)s')
