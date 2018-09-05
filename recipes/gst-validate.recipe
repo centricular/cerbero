@@ -30,6 +30,10 @@ class Recipe(custom.GStreamer):
         if self.config.target_platform == Platform.LINUX:
             self.files_libs.append("libgstvalidate-default-overrides-1.0")
 
-        if self.config.platform != Platform.WINDOWS:
+        if self.config.platform == Platform.WINDOWS:
+            # FIXME: Fails in i18n.merge_file due to msgfmt being too old, need
+            # an option to disable i18n support
+            self.meson_options['debug_viewer'] = 'false'
+        else:
             # validatedefaultinjection plugin isn't built on Windows
             self.files_gst_validate_plugins = ['lib/gstreamer-1.0/validate/libgstvalidatefaultinjection%(mext)s']
