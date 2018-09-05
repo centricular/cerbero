@@ -63,7 +63,11 @@ class Source (object):
         '''
         Replaces name and version in strings
         '''
-        return string % {'name': self.name, 'version': self.version}
+        name = self.name
+        if name.startswith('gst') and name.endswith('-1.0'):
+            # gst-libav-1.0, etc is useless for substitution, convert to 'gst-libav'
+            name = name[:-4]
+        return string % {'name': name, 'version': self.version}
 
 
 class CustomSource (Source):
@@ -175,13 +179,14 @@ class GitCache (Source):
 
     def __init__(self):
         Source.__init__(self)
-        if self.remotes is None:
-            self.remotes = {}
+        self.remotes = {} if self.remotes is None else self.remotes.copy()
         if 'origin' in self.remotes:
-            o = urllib.parse.urlparse(self.remotes['origin'])
+            url = self.replace_name_and_version(self.remotes['origin'])
+            o = urllib.parse.urlparse(url)
             if o.scheme in ('http', 'git', 'ssh'):
                 raise FatalError('git remote origin URL {!r} must use HTTPS not {!r}'
                                  ''.format(self.url, o.scheme))
+            self.remotes['origin'] = url
         else:
             # XXX: When is this used?
             self.remotes['origin'] = '%s/%s.git' % \
