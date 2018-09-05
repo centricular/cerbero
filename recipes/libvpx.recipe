@@ -24,7 +24,7 @@ class Recipe(recipe.Recipe):
     make = 'make HAVE_GNU_STRIP=no'
     # The shell-based build system magically supports Visual Studio with the
     # power of awesome hacks
-    can_msvc = True
+    can_msvc = False
 
     patches = ['libvpx/0001-build-Fix-the-min-version-flag-for-iOS-simulator-bui.patch',
                'libvpx/0002-Include-Android-cpu-features.c-instead-of-.h.patch',
