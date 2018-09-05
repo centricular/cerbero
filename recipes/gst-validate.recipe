@@ -30,3 +30,7 @@ class Recipe(custom.GStreamer):
     def prepare(self):
         if self.config.target_platform == Platform.LINUX:
             self.files_libs.append("libgstvalidate-default-overrides-1.0")
+        if self.config.platform == Platform.WINDOWS:
+            # FIXME: Fails in i18n.merge_file due to msgfmt being too old, need
+            # an option to disable i18n support
+            self.meson_options['debug_viewer'] = 'false'
