@@ -3,11 +3,11 @@ from cerbero.utils import shell
 
 class Recipe(custom.GStreamer):
     name = 'gst-validate'
-    btype = BuildType.MESON
-    meson_options = {'gtk_doc': 'disabled'}
     # gst-validate tarball has a different layout than the git repo, just always build from git
     stype = SourceType.GIT
+    can_msvc = False
     remotes = {'origin': 'https://anongit.freedesktop.org/git/gstreamer/gst-devtools'}
+    config_sh = 'sh ./autogen.sh --noconfigure && ./configure --enable-static --program-transform-name= '
     srcdir = 'validate'
     deps = ['gstreamer-1.0', 'gst-plugins-base-1.0', 'json-glib']
 
@@ -30,7 +30,3 @@ class Recipe(custom.GStreamer):
     def prepare(self):
         if self.config.target_platform == Platform.LINUX:
             self.files_libs.append("libgstvalidate-default-overrides-1.0")
-        if self.config.platform == Platform.WINDOWS:
-            # FIXME: Fails in i18n.merge_file due to msgfmt being too old, need
-            # an option to disable i18n support
-            self.meson_options['debug_viewer'] = 'false'

@@ -12,7 +12,7 @@ from cerbero.utils import shell, to_unixpath
 
 class GStreamer(recipe.Recipe):
     licenses = [License.LGPLv2Plus]
-    version = '1.15.0.1'
+    version = '1.14.2'
     tagged_for_release = False
     # Always define `commit`, used by gst-validate
     if int(version.split('.')[1]) % 2 == 0:
