@@ -1,0 +1,26 @@
+From 59a689a8b04b2cffb17cbd1fdf95965d6a820c6c Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Sun, 28 Oct 2018 15:17:52 +0000
+Subject: [PATCH] meson: Don't build glx tests if x11 is disabled
+
+Fixes build failure when x11 is not found or disabled.
+---
+ test/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/meson.build b/test/meson.build
+index 02efa57..3eda320 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -74,7 +74,7 @@ if build_egl and build_x11_tests
+   endforeach
+ endif
+ 
+-if build_glx
++if build_glx and build_x11_tests
+   glx_common_sources = [ 'glx_common.h', 'glx_common.c', ]
+   glx_common_lib = static_library('glx_common',
+                                   sources: glx_common_sources,
+-- 
+2.17.1
+

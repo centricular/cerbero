@@ -1,0 +1,23 @@
+# -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
+
+
+class Recipe(recipe.Recipe):
+    name = 'libepoxy'
+    version = '1.5.3'
+    stype = SourceType.TARBALL
+    btype = BuildType.MESON
+    url = 'https://github.com/anholt/%(name)s/releases/download/%(version)s/%(name)s-%(version)s.tar.xz'
+    tarball_checksum = '002958c5528321edd53440235d3c44e71b5b1e09b9177e8daf677450b6c4433d'
+    licenses = [License.MIT]
+
+    use_system_libs = True
+    patches = [name + '/0001-meson-Don-t-build-glx-tests-if-x11-is-disabled.patch']
+
+    files_libs = ['libepoxy']
+    files_devel = ['include/epoxy', 'lib/pkgconfig/epoxy.pc']
+
+    def post_install(self):
+        libtool_la = LibtoolLibrary('epoxy', 0, 0, 0, self.config.libdir,
+                self.config.target_platform)
+        libtool_la.save()
