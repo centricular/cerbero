@@ -15,8 +15,11 @@ class Recipe(recipe.Recipe):
                      'installed_tests' : 'false',
                      'builtin_loaders' : 'all',
                      'gio_sniffing' : 'false',
-                     'x11' : 'false'}
-    deps = ['libjpeg-turbo', 'glib', 'libpng', 'tiff', 'zlib' ]
+                     'x11' : 'false',
+                     'tiff': 'false',
+                     # Flip this once libjpeg-turbo is ported to meson
+                     'jpeg': 'false'}
+    deps = ['glib', 'libpng', 'zlib']
 
     patches = ['gdk-pixbuf/0001-meson-add-option-for-disabling-GIO-sniffing.patch',
                'gdk-pixbuf/0001-meson-Don-t-generate-the-loader-cache-when-cross-com.patch',
@@ -24,7 +27,8 @@ class Recipe(recipe.Recipe):
                'gdk-pixbuf/0001-build-add-enum-generation-header-to-sources-of-built.patch']
 
     files_libs = ['libgdk_pixbuf-2.0']
-    files_bins = ['gdk-pixbuf-query-loaders', 'gdk-pixbuf-csource']
+    files_bins = ['gdk-pixbuf-query-loaders', 'gdk-pixbuf-csource',
+                  'gdk-pixbuf-pixdata', 'gdk-pixbuf-thumbnailer']
     files_devel = ['lib/pkgconfig/gdk-pixbuf-2.0.pc', 'include/gdk-pixbuf-2.0']
     files_lang = ['gdk-pixbuf']
     files_typelibs = ['GdkPixbuf-2.0']
@@ -45,5 +49,5 @@ class Recipe(recipe.Recipe):
             shell.replace(cache, {self.config.prefix: '../'})
 
         lib = LibtoolLibrary('gdk_pixbuf-2.0', None, None, None, self.config.libdir,
-                self.config.target_platform, deps=['gobject-2.0', 'gio-2.0', 'tiff', 'jpeg', 'png16'])
+                self.config.target_platform, deps=['gobject-2.0', 'gio-2.0', 'png16'])
         lib.save()
