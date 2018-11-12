@@ -1,23 +1,26 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+import shutil
+from cerbero.tools.libtool import LibtoolLibrary
 
 
 class Recipe(recipe.Recipe):
     name = 'libpng'
     version = '1.6.35'
     stype = SourceType.TARBALL
+    btype = BuildType.MESON
     url = 'sf://'
     tarball_checksum = '23912ec8c9584917ed9b09c5023465d71709dce089be503c7867fec68a93bcd7'
     licenses = [{License.LibPNG: ['LICENSE']}]
     deps = ['zlib']
-    patches = [name + '/0001-neon-fix-function-export-names-for-iOS-armv7.patch']
+    patches = [name + '/0001-neon-fix-function-export-names-for-iOS-armv7.patch',
+               name + '/0001-Add-meson-build-files.patch',]
 
     files_libs = ['libpng16']
-    files_devel = ['include/libpng16', 'bin/libpng16-config',
-                   'lib/pkgconfig/libpng16.pc', 'lib/pkgconfig/libpng.pc']
+    files_devel = ['include/libpng16', 'lib/pkgconfig/libpng.pc', 'lib/pkgconfig/libpng16.pc']
 
-    def prepare(self):
-        if self.config.target_platform == Platform.IOS:
-            if 'GAS' in os.environ:
-                self.set_env('CCAS', os.environ['GAS'], '-no-integrated-as')
-        if self.config.target_arch == Architecture.ARM64:
-            self.configure_options += ' --disable-arm-neon '
+    def post_install (self):
+        pkgdir = os.path.join(self.config.prefix, 'lib/pkgconfig')
+        shutil.copy(os.path.join(pkgdir, 'libpng.pc'), os.path.join(pkgdir, 'libpng16.pc'))
+        lib = LibtoolLibrary('png16', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=['z'])
+        lib.save()

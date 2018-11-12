@@ -1,0 +1,140 @@
+From d0f542df0699ea45136844c07cc7b2d5646bf0d2 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Mon, 12 Nov 2018 15:45:59 +0530
+Subject: [PATCH] Add meson build files
+
+Taken from https://wrapdb.mesonbuild.com/libpng with some updates
+---
+ LICENSE.build | 19 +++++++++++
+ meson.build   | 93 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 112 insertions(+)
+ create mode 100644 LICENSE.build
+ create mode 100644 meson.build
+
+diff --git a/LICENSE.build b/LICENSE.build
+new file mode 100644
+index 0000000..ec28804
+--- /dev/null
++++ b/LICENSE.build
+@@ -0,0 +1,19 @@
++Copyright (c) 2018 The Meson development team
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/meson.build b/meson.build
+new file mode 100644
+index 0000000..c32dbba
+--- /dev/null
++++ b/meson.build
+@@ -0,0 +1,93 @@
++project('libpng', 'c', version : '1.6.35', license : 'libpng')
++
++png_versions = meson.project_version().split('.')
++png_major_version = png_versions[0]
++png_minor_version = png_versions[1]
++png_micro_version = png_versions[2]
++png_libname = 'png@0@@1@'.format(png_major_version, png_minor_version)
++png_libversion = '@0@@1@.@2@.0'.format(png_major_version, png_minor_version, png_micro_version)
++
++cc = meson.get_compiler('c')
++
++include = include_directories('.')
++
++if cc.get_define('__ANDROID__') != ''
++  zlib_dep = cc.find_library('z')
++else
++  zlib_dep = dependency('zlib', fallback : ['zlib', 'zlib_dep'])
++endif
++
++c_args = []
++
++if host_machine.system() == 'windows'
++  c_args += ['-DPNG_BUILD_DLL']
++endif
++
++libpng_deps = [
++        zlib_dep,
++        cc.find_library('m', required : false),
++]
++
++libpng = library(png_libname, [
++        'png.c',
++        'pngerror.c',
++        'pngget.c',
++        'pngmem.c',
++        'pngpread.c',
++        'pngread.c',
++        'pngrio.c',
++        'pngrtran.c',
++        'pngrutil.c',
++        'pngset.c',
++        'pngtrans.c',
++        'pngwio.c',
++        'pngwrite.c',
++        'pngwtran.c',
++        'pngwutil.c',
++    ],
++    version : png_libversion,
++    dependencies : libpng_deps,
++    c_args: c_args,
++    install: true,
++)
++
++pngincsubdir = 'lib' + png_libname
++pngincludedir = join_paths(get_option('includedir'), pngincsubdir)
++
++configure_file(
++    input : 'scripts/pnglibconf.h.prebuilt',
++    output : 'pnglibconf.h',
++    copy: true,
++    install_dir : pngincludedir,
++    install: true
++)
++
++install_headers('png.h', 'pngconf.h', subdir : pngincsubdir)
++
++cdata = configuration_data()
++cdata.set('prefix', get_option('prefix'))
++cdata.set('exec_prefix', get_option('prefix'))
++cdata.set('libdir', '${prefix}/' + get_option('libdir'))
++cdata.set('includedir', '${prefix}/' + get_option('includedir'))
++cdata.set('PNGLIB_MAJOR', png_major_version)
++cdata.set('PNGLIB_MINOR', png_minor_version)
++cdata.set('PNGLIB_VERSION', meson.project_version())
++# FIXME: should auto-generate pkg-config file to get this right
++cdata.set('LIBS', '-lz')
++
++configure_file(
++    input : 'libpng.pc.in',
++    output : 'libpng.pc',
++    configuration : cdata,
++    install_dir : join_paths(get_option('libdir'), 'pkgconfig'),
++    install : true,
++)
++
++png_dep = declare_dependency(
++    include_directories : include,
++    link_with : libpng,
++    dependencies : libpng_deps,
++)
++
++png_test = executable('pngtest', 'pngtest.c', dependencies : png_dep)
++test('pngtest', png_test, args : files('pngtest.png'))
+-- 
+2.18.0.windows.1
+
