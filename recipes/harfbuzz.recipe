@@ -1,30 +1,27 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
 
 
 class Recipe(recipe.Recipe):
     name = 'harfbuzz'
-    version = '1.7.5'
-    stype = SourceType.TARBALL
-    url = 'https://www.freedesktop.org/software/%(name)s/release/%(name)s-%(version)s.tar.bz2'
-    tarball_checksum = '84574e1b1f65ca694cb8fb6905309665c0368af18a312357f8ff886ee2f29563'
+    version = '1.7.6'
+    #stype = SourceType.TARBALL
+    #url = 'https://www.freedesktop.org/software/%(name)s/release/%(name)s-%(version)s.tar.bz2'
+    #tarball_checksum = '84574e1b1f65ca694cb8fb6905309665c0368af18a312357f8ff886ee2f29563'
+    stype = SourceType.GIT
+    btype = BuildType.MESON
+    remotes = {'origin': 'https://github.com/centricular/%(name)s.git'}
+    commit = 'origin/meson'
     licenses = [{License.BSD_like: ['COPYING', 'src/hb-ucdn/COPYING']}]
     deps = ['fontconfig', 'cairo', 'glib']
-    configure_options = "--enable-static --with-icu=no"
-    autoreconf = True
 
     files_bins = ['hb-ot-shape-closure', 'hb-view', 'hb-shape']
     files_libs = ['libharfbuzz']
     files_devel = ['include/harfbuzz/*.h', 'lib/pkgconfig/harfbuzz.pc']
 
-    def prepare(self):
-        if self.config.platform != Platform.WINDOWS:
-            self.patches = ['harfbuzz/0001-Use-Python3-in-gen-def.py.patch']
-
-        if self.config.target_platform == Platform.ANDROID:
-            v = DistroVersion.get_android_api_version(self.config.target_distro_version)
-            if self.config.target_arch in [Architecture.ARM, Architecture.ARMv7, Architecture.X86] and v < 21:
-                # FIXME: HACK to make projects using mmap compile with NDK 16
-                # we fail to compile with -D_FILE_OFFSET_BITS=64
-                # because we don't use clang and we use a platform < 21 (Lollipop)
-                # See $NDK_ROOT/sysroot/usr/include/sys/mman.h as one example
-                self.set_env('ac_cv_func_mmap', 'no')
+    def post_install (self):
+        deps = ['glib-2.0', 'intl', 'freetype', 'bz2', 'png16', 'z', 'stdc++']
+        lib = LibtoolLibrary('harfbuzz', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=deps)
+        lib.save()
+        super().post_install()
