@@ -1,0 +1,24 @@
+From cfb6e657bcd6bf452da9fab6e1e6e5ef0c3f7495 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Mon, 12 Nov 2018 18:20:24 +0530
+Subject: [PATCH] meson: Temporarily disable gl support for windows
+
+---
+ meson.build | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/meson.build b/meson.build
+index e0a63450a..619ff92c8 100644
+--- a/meson.build
++++ b/meson.build
+@@ -420,6 +420,7 @@ elif cc.has_header('GL/gl.h', dependencies: gl_dep) and cc.has_header('GL/glext.
+     deps += [gl_dep]
+   endif
+ endif
++use_gl = false
+
+
+ if use_gl
+-- 
+2.18.0.windows.1
+
