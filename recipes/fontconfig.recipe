@@ -1,22 +1,17 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
-import os
-from cerbero.utils import needs_xcode8_sdk_workaround
+from cerbero.tools.libtool import LibtoolLibrary
 
 class Recipe(recipe.Recipe):
     name = 'fontconfig'
-    version = '2.12.6'
-    stype = SourceType.TARBALL
-    url = 'https://www.freedesktop.org/software/fontconfig/release/fontconfig-%(version)s.tar.gz'
-    tarball_checksum = '064b9ebf060c9e77011733ac9dc0e2ce92870b574cca2405e11f5353a683c334'
+    version = '2.13.0'
+    #stype = SourceType.TARBALL
+    #url = 'https://www.freedesktop.org/software/fontconfig/release/fontconfig-%(version)s.tar.gz'
+    #tarball_checksum = '064b9ebf060c9e77011733ac9dc0e2ce92870b574cca2405e11f5353a683c334'
+    btype = BuildType.MESON
+    remotes = {'origin': 'https://github.com/centricular/%(name)s.git'}
+    commit = 'origin/meson'
     licenses = [{License.MIT: ['COPYING']}]
-    configure_options = '--disable-docs'
     deps = ['expat', 'freetype', 'zlib', 'bzip2']
-    autoreconf = True
-    patches = ['fontconfig/0003-configure-Allow-static-build.patch',
-               'fontconfig/0001-Do-not-build-tests-on-windows.patch',
-               'fontconfig/0001-Don-t-use-_mktemp_s-which-is-not-available-in-XP.patch',
-               'fontconfig/0004-Fix-cross-compilation-by-passing-CPPFLAGS-to-CPP.patch'
-               ]
 
     files_libs = ['libfontconfig']
     files_etc = [
@@ -26,25 +21,9 @@ class Recipe(recipe.Recipe):
         ]
     files_devel = ['lib/pkgconfig/fontconfig.pc', 'include/fontconfig']
 
-    autoreconf = True
-
-    def prepare(self):
-        if needs_xcode8_sdk_workaround(self.config):
-            self.set_env('ac_cv_func_mkostemp', 'no')
-        if self.config.target_platform == Platform.WINDOWS:
-            if self.config.target_arch == Architecture.X86_64:
-                self.configure_options += ' --with-arch=x86_64 '
-            else:
-                self.configure_options += ' --with-arch=i686 '
-
-    def post_install(self):
-        # Create relative symlinks to prevent breakage during packaging
-        if self.config.target_platform != Platform.WINDOWS:
-            confddir = os.path.join(self.config.prefix, 'etc', 'fonts', 'conf.d')
-            linksrc = os.path.join('..', '..', '..', 'share', 'fontconfig', 'conf.avail')
-            for f in os.listdir(confddir):
-                if not f.endswith('.conf'):
-                    continue
-                os.remove(os.path.join(confddir, f))
-                os.symlink(os.path.join(linksrc, f), os.path.join(confddir, f))
+    def post_install (self):
+        deps = ['freetype', 'png16', 'expat', 'bz2', 'z']
+        lib = LibtoolLibrary('fontconfig', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=deps)
+        lib.save()
         super().post_install()
