@@ -1,22 +1,23 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
 
 
 class Recipe(recipe.Recipe):
     name = 'cairo'
-    version = '1.14.12'
-    stype = SourceType.TARBALL
-    url = 'https://cairographics.org/releases/cairo-%(version)s.tar.xz'
-    tarball_checksum = '8c90f00c500b2299c0a323dd9beead2a00353752b2092ead558139bd67f7bf16'
+    version = '1.16.0'
+    #stype = SourceType.TARBALL
+    #url = 'https://cairographics.org/releases/cairo-%(version)s.tar.xz'
+    #tarball_checksum = '8c90f00c500b2299c0a323dd9beead2a00353752b2092ead558139bd67f7bf16'
+    btype = BuildType.MESON
+    remotes = {'origin': 'https://github.com/centricular/%(name)s.git'}
+    commit = 'origin/meson-1.16.0'
     # either LGPLv2.1 or MPLv1.1
     licenses = [License.LGPLv2_1]
-    autoreconf = True
-    autoreconf_sh = 'NOCONFIGURE=1 ./autogen.sh'
+    meson_options = {'tests': 'disabled'}
     deps = ['glib', 'libpng', 'zlib', 'pixman', 'fontconfig', 'freetype']
-    patches = ['cairo/0001-Fix-compilation-with-Android-s-bionic-libc.patch',
-               'cairo/0001-Disable-building-of-the-tests.patch',
-               ]
+    patches = [name + '/0001-meson-Temporarily-disable-gl-support-for-windows.patch']
 
-    files_libs = ['libcairo', 'libcairo-gobject', 'libcairo-script-interpreter']
+    files_libs = ['libcairo', 'libcairo-gobject']
     files_devel = [
         'lib/pkgconfig/cairo-fc.pc',
         'lib/pkgconfig/cairo.pc',
@@ -36,28 +37,23 @@ class Recipe(recipe.Recipe):
                          'lib/pkgconfig/cairo-quartz.pc']
     }
 
-    # Skipping because it requires a display and documented as randomly failing
-    make_check = None
-
     def prepare(self):
-        # extra flags needed for gcc 4.9
-        if self.config.target_distro == Distro.ARCH:
-            self.append_env('CFLAGS', '-fno-lto')
-            self.append_env('CXXFLAGS', '-fno-lto')
-            self.append_env('CPPFLAGS', '-fno-lto')
-
         if self.config.variants.x11:
             self.files_devel += ['lib/pkgconfig/cairo-xlib-xrender.pc',
                                  'lib/pkgconfig/cairo-xlib.pc']
-        else:
-            self.configure_options += '--without-x '
-        if self.config.target_platform == Platform.DARWIN:
-            self.configure_options += ' --enable-quartz-font --enable-quartz-image'
-        elif self.config.target_platform == Platform.ANDROID:
-            v = DistroVersion.get_android_api_version(self.config.target_distro_version)
-            if self.config.target_arch in [Architecture.ARM, Architecture.ARMv7, Architecture.X86] and v < 21:
-                # FIXME: HACK to make projects using mmap compile with NDK 16
-                # we fail to compile with -D_FILE_OFFSET_BITS=64
-                # because we don't use clang and we use a platform < 21 (Lollipop)
-                # See $NDK_ROOT/sysroot/usr/include/sys/mman.h as one example
-                self.set_env('ac_cv_func_mmap', 'no')
+        #else:
+            #self.configure_options += '--without-x '
+        #if self.config.target_platform == Platform.DARWIN:
+        #    self.configure_options += ' --enable-quartz-font --enable-quartz-image'
+
+    def post_install (self):
+        cairo_deps = ['pixman-1', 'fontconfig', 'freetype', 'expat', 'bz2', 'png16', 'z']
+        if self.config.target_platform == Platform.WINDOWS:
+            cairo_deps += ['-lgdi32', '-lmsimg32']
+        lib = LibtoolLibrary('cairo', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=cairo_deps)
+        lib.save()
+        gobject_deps = ['gobject-2.0', 'glib-2.0', 'ffi', 'intl']
+        lib = LibtoolLibrary('cairo-gobject', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=(cairo_deps + gobject_deps))
+        lib.save()
