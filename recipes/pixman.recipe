@@ -1,20 +1,19 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
 
-from cerbero.utils import messages as m
 import shutil
+from cerbero.utils import messages as m
+from cerbero.tools.libtool import LibtoolLibrary
 
 class Recipe(recipe.Recipe):
     name = 'pixman'
-    version = '0.34.0'
-    stype = SourceType.TARBALL
-    url = 'https://cairographics.org/releases/pixman-%(version)s.tar.gz'
-    tarball_checksum = '21b6b249b51c6800dc9553b65106e1e37d0e25df942c90531d4c3997aa20a88e'
+    version = '0.35.1'
+    #stype = SourceType.TARBALL
+    #url = 'https://cairographics.org/releases/pixman-%(version)s.tar.gz'
+    #tarball_checksum = '21b6b249b51c6800dc9553b65106e1e37d0e25df942c90531d4c3997aa20a88e'
+    btype = BuildType.MESON
+    remotes = {'origin': 'https://github.com/centricular/pixman.git'}
+    commit = 'origin/meson'
     licenses = [{License.MIT: ['COPYING']}]
-    autoreconf = True
-    patches = ['pixman/0001-Fix-build-on-Android.patch',
-               'pixman/0002-Enable-CPU-detection-on-Android.patch',
-               'pixman/0003-tests-Fix-compilation-issue-with-clang.patch'
-    ]
 
     files_libs = ['libpixman-1']
     files_devel = ['include/pixman-1', 'lib/pkgconfig/pixman-1.pc']
@@ -53,3 +52,9 @@ class Recipe(recipe.Recipe):
             m.action("copying %s to %s" % (o, f))
             shutil.copy(o, f)
         super(recipe.Recipe, self).configure()
+
+    def post_install (self):
+        lib = LibtoolLibrary('pixman-1', None, None, None, self.config.libdir,
+                self.config.target_platform)
+        lib.save()
+        super().post_install()
