@@ -1,13 +1,23 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
 
 
 class Recipe(recipe.Recipe):
     name = 'expat'
     version = '2.2.5'
     licenses = [{License.BSD_like: ['COPYING']}]
+    btype = BuildType.MESON
     stype = SourceType.TARBALL
     url = 'https://github.com/libexpat/libexpat/releases/download/R_2_2_5/%(name)s-%(version)s.tar.bz2'
     tarball_checksum = 'd9dc32efba7e74f788fcc4f212a43216fc37cf5f23f4c2339664d473353aedf6'
 
     files_libs = ['libexpat']
     files_devel = ['include/expat.h', 'include/expat_external.h', 'lib/pkgconfig/expat.pc']
+
+    patches = [name + '/0001-Add-meson-build-files.patch']
+
+    def post_install (self):
+        lib = LibtoolLibrary('expat', None, None, None, self.config.libdir,
+                self.config.target_platform)
+        lib.save()
+        super().post_install()
