@@ -1,0 +1,319 @@
+From 3c3f13e5bac48c1dc39d53fc8a994210e72c78cc Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Tue, 20 Nov 2018 15:52:22 +0530
+Subject: [PATCH 2/3] backends: Add rspfile support to exe serialization
+
+Sometimes custom commands can accept @rsp files instead of command-line
+arguments. Use that when possible to avoid commandline length errors on
+Windows.
+---
+ mesonbuild/backend/backends.py      | 104 +++++++++++++++-------------
+ mesonbuild/backend/ninjabackend.py  |  10 +--
+ mesonbuild/backend/vs2010backend.py |   4 +-
+ mesonbuild/build.py                 |   3 +-
+ mesonbuild/scripts/meson_exe.py     |  18 ++++-
+ 5 files changed, 82 insertions(+), 57 deletions(-)
+
+diff --git a/mesonbuild/backend/backends.py b/mesonbuild/backend/backends.py
+index 78c2877..ec58269 100644
+--- a/mesonbuild/backend/backends.py
++++ b/mesonbuild/backend/backends.py
+@@ -72,7 +72,7 @@ class TargetInstallData:
+ 
+ class ExecutableSerialisation:
+     def __init__(self, name, fname, cmd_args, env, is_cross, exe_wrapper,
+-                 workdir, extra_paths, capture):
++                 workdir, extra_paths, capture, can_rspfile):
+         self.name = name
+         self.fname = fname
+         self.cmd_args = cmd_args
+@@ -84,6 +84,7 @@ class ExecutableSerialisation:
+         self.workdir = workdir
+         self.extra_paths = extra_paths
+         self.capture = capture
++        self.can_rspfile = can_rspfile
+ 
+ class TestSerialisation:
+     def __init__(self, name, project, suite, fname, is_cross_built, exe_wrapper, is_parallel,
+@@ -283,7 +284,7 @@ class Backend:
+         return obj_list
+ 
+     def serialize_executable(self, tname, exe, cmd_args, workdir, env={},
+-                             extra_paths=None, capture=None):
++                             extra_paths=None, capture=None, can_rspfile=False):
+         '''
+         Serialize an executable for running with a generator or a custom target
+         '''
+@@ -297,7 +298,7 @@ class Backend:
+         # Can't just use exe.name here; it will likely be run more than once
+         if isinstance(exe, (dependencies.ExternalProgram,
+                             build.BuildTarget, build.CustomTarget)):
+-            basename = exe.name
++            basename = exe.name.replace('\\', '_').replace('/', '_')
+         else:
+             basename = os.path.basename(exe)
+         # Take a digest of the cmd args, env, workdir, and capture. This avoids
+@@ -333,7 +334,7 @@ class Backend:
+                 exe_wrapper = None
+             es = ExecutableSerialisation(basename, exe_cmd, cmd_args, env,
+                                          is_cross_built, exe_wrapper, workdir,
+-                                         extra_paths, capture)
++                                         extra_paths, capture, can_rspfile)
+             pickle.dump(es, f)
+         return exe_data
+ 
+@@ -848,6 +849,50 @@ class Backend:
+                     deps.append(os.path.join(self.build_to_src, target.subdir, i))
+         return deps
+ 
++    def eval_custom_target_command_arg(self, i, target, source_root, build_root, outdir):
++        if isinstance(i, dependencies.ExternalProgram):
++            return i.get_command()
++        if isinstance(i, build.Executable):
++            return self.exe_object_to_cmd_array(i)
++        elif isinstance(i, build.CustomTarget):
++            # GIR scanner will attempt to execute this binary but
++            # it assumes that it is in path, so always give it a full path.
++            tmp = i.get_outputs()[0]
++            return [os.path.join(self.get_target_dir(i), tmp)]
++        elif isinstance(i, mesonlib.File):
++            i = i.rel_to_builddir(self.build_to_src)
++            if target.absolute_paths:
++                i = os.path.join(self.environment.get_build_dir(), i)
++        # FIXME: str types are blindly added ignoring 'target.absolute_paths'
++        # because we can't know if they refer to a file or just a string
++        elif not isinstance(i, str):
++            err_msg = 'Argument {0} is of unknown type {1}'
++            raise RuntimeError(err_msg.format(str(i), str(type(i))))
++        elif '@SOURCE_ROOT@' in i:
++            i = i.replace('@SOURCE_ROOT@', source_root)
++        elif '@BUILD_ROOT@' in i:
++            i = i.replace('@BUILD_ROOT@', build_root)
++        elif '@DEPFILE@' in i:
++            if target.depfile is None:
++                msg = 'Custom target {!r} has @DEPFILE@ but no depfile ' \
++                      'keyword argument.'.format(target.name)
++                raise MesonException(msg)
++            dfilename = os.path.join(outdir, target.depfile)
++            i = i.replace('@DEPFILE@', dfilename)
++        elif '@PRIVATE_OUTDIR_' in i:
++            match = re.search('@PRIVATE_OUTDIR_(ABS_)?([^/\s*]*)@', i)
++            if not match:
++                msg = 'Custom target {!r} has an invalid argument {!r}' \
++                      ''.format(target.name, i)
++                raise MesonException(msg)
++            source = match.group(0)
++            if match.group(1) is None and not target.absolute_paths:
++                lead_dir = ''
++            else:
++                lead_dir = self.environment.get_build_dir()
++            i = i.replace(source, os.path.join(lead_dir, outdir))
++        return [i]
++
+     def eval_custom_target_command(self, target, absolute_outputs=False):
+         # We want the outputs to be absolute only when using the VS backend
+         # XXX: Maybe allow the vs backend to use relative paths too?
+@@ -862,52 +907,15 @@ class Backend:
+         for i in target.get_outputs():
+             outputs.append(os.path.join(outdir, i))
+         inputs = self.get_custom_target_sources(target)
+-        # Evaluate the command list
++        # Evaluate the executable
++        exe = self.eval_custom_target_command_arg(target.command[0], target, source_root, build_root, outdir)
++        # Evaluate the command argument list
+         cmd = []
+-        for i in target.command:
+-            if isinstance(i, build.Executable):
+-                cmd += self.exe_object_to_cmd_array(i)
+-                continue
+-            elif isinstance(i, build.CustomTarget):
+-                # GIR scanner will attempt to execute this binary but
+-                # it assumes that it is in path, so always give it a full path.
+-                tmp = i.get_outputs()[0]
+-                i = os.path.join(self.get_target_dir(i), tmp)
+-            elif isinstance(i, mesonlib.File):
+-                i = i.rel_to_builddir(self.build_to_src)
+-                if target.absolute_paths:
+-                    i = os.path.join(self.environment.get_build_dir(), i)
+-            # FIXME: str types are blindly added ignoring 'target.absolute_paths'
+-            # because we can't know if they refer to a file or just a string
+-            elif not isinstance(i, str):
+-                err_msg = 'Argument {0} is of unknown type {1}'
+-                raise RuntimeError(err_msg.format(str(i), str(type(i))))
+-            elif '@SOURCE_ROOT@' in i:
+-                i = i.replace('@SOURCE_ROOT@', source_root)
+-            elif '@BUILD_ROOT@' in i:
+-                i = i.replace('@BUILD_ROOT@', build_root)
+-            elif '@DEPFILE@' in i:
+-                if target.depfile is None:
+-                    msg = 'Custom target {!r} has @DEPFILE@ but no depfile ' \
+-                          'keyword argument.'.format(target.name)
+-                    raise MesonException(msg)
+-                dfilename = os.path.join(outdir, target.depfile)
+-                i = i.replace('@DEPFILE@', dfilename)
+-            elif '@PRIVATE_OUTDIR_' in i:
+-                match = re.search('@PRIVATE_OUTDIR_(ABS_)?([^/\s*]*)@', i)
+-                if not match:
+-                    msg = 'Custom target {!r} has an invalid argument {!r}' \
+-                          ''.format(target.name, i)
+-                    raise MesonException(msg)
+-                source = match.group(0)
+-                if match.group(1) is None and not target.absolute_paths:
+-                    lead_dir = ''
+-                else:
+-                    lead_dir = self.environment.get_build_dir()
+-                i = i.replace(source, os.path.join(lead_dir, outdir))
+-            cmd.append(i)
++        for i in target.command[1:]:
++            cmd += self.eval_custom_target_command_arg(i, target, source_root, build_root, outdir)
+         # Substitute the rest of the template strings
+         values = mesonlib.get_filenames_templates_dict(inputs, outputs)
++        exe = mesonlib.substitute_values(exe, values)
+         cmd = mesonlib.substitute_values(cmd, values)
+         # This should not be necessary but removing it breaks
+         # building GStreamer on Windows. The underlying issue
+@@ -928,7 +936,7 @@ class Backend:
+         #
+         # https://github.com/mesonbuild/meson/pull/737
+         cmd = [i.replace('\\', '/') for i in cmd]
+-        return inputs, outputs, cmd
++        return inputs, outputs, exe, cmd
+ 
+     def run_postconf_scripts(self):
+         env = {'MESON_SOURCE_ROOT': self.environment.get_source_dir(),
+diff --git a/mesonbuild/backend/ninjabackend.py b/mesonbuild/backend/ninjabackend.py
+index 6822e93..6438368 100644
+--- a/mesonbuild/backend/ninjabackend.py
++++ b/mesonbuild/backend/ninjabackend.py
+@@ -504,7 +504,7 @@ int dummy;
+ 
+     def generate_custom_target(self, target, outfile):
+         self.custom_target_generator_inputs(target, outfile)
+-        (srcs, ofilenames, cmd) = self.eval_custom_target_command(target)
++        (srcs, ofilenames, exe_args, cmd_args) = self.eval_custom_target_command(target)
+         deps = self.unwrap_dep_list(target)
+         deps += self.get_custom_target_depend_files(target)
+         desc = 'Generating {0} with a {1} command.'
+@@ -528,7 +528,7 @@ int dummy;
+             serialize = True
+         # If the command line requires a newline, also use the wrapper, as
+         # ninja does not support them in its build rule syntax.
+-        if any('\n' in c for c in cmd):
++        if any('\n' in c for c in cmd_args):
+             serialize = True
+         # Windows doesn't have -rpath, so for EXEs that need DLLs built within
+         # the project, we need to set PATH so the DLLs are found. We use
+@@ -545,14 +545,16 @@ int dummy;
+             if extra_paths:
+                 serialize = True
+         if serialize:
+-            exe_data = self.serialize_executable(target.name, target.command[0], cmd[1:],
++            exe_data = self.serialize_executable(target.name, target.command[0], cmd_args,
+                                                  # All targets are built from the build dir
+                                                  self.environment.get_build_dir(),
+                                                  extra_paths=extra_paths,
+-                                                 capture=ofilenames[0] if target.capture else None)
++                                                 capture=ofilenames[0] if target.capture else None,
++                                                 can_rspfile=target.can_rspfile)
+             cmd = self.environment.get_build_command() + ['--internal', 'exe', exe_data]
+             cmd_type = 'meson_exe.py custom'
+         else:
++            cmd = exe_args + cmd_args
+             cmd_type = 'custom'
+         if target.depfile is not None:
+             depfile = target.get_dep_outname(elem.infilenames)
+diff --git a/mesonbuild/backend/vs2010backend.py b/mesonbuild/backend/vs2010backend.py
+index 09b074c..3ea71f9 100644
+--- a/mesonbuild/backend/vs2010backend.py
++++ b/mesonbuild/backend/vs2010backend.py
+@@ -492,14 +492,14 @@ class Vs2010Backend(backends.Backend):
+         # We need to always use absolute paths because our invocation is always
+         # from the target dir, not the build root.
+         target.absolute_paths = True
+-        (srcs, ofilenames, cmd) = self.eval_custom_target_command(target, True)
++        (srcs, ofilenames, _, cmd_args) = self.eval_custom_target_command(target, True)
+         depend_files = self.get_custom_target_depend_files(target, True)
+         # Always use a wrapper because MSBuild eats random characters when
+         # there are many arguments.
+         tdir_abs = os.path.join(self.environment.get_build_dir(), self.get_target_dir(target))
+         extra_bdeps = target.get_transitive_build_target_deps()
+         extra_paths = self.determine_windows_extra_paths(target.command[0], extra_bdeps)
+-        exe_data = self.serialize_executable(target.name, target.command[0], cmd[1:],
++        exe_data = self.serialize_executable(target.name, target.command[0], cmd_args,
+                                              # All targets run from the target dir
+                                              tdir_abs,
+                                              extra_paths=extra_paths,
+diff --git a/mesonbuild/build.py b/mesonbuild/build.py
+index 44d6936..f499ea9 100644
+--- a/mesonbuild/build.py
++++ b/mesonbuild/build.py
+@@ -1765,6 +1765,7 @@ class CustomTarget(Target):
+         self.extra_depends = []
+         self.depend_files = [] # Files that this target depends on but are not on the command line.
+         self.depfile = None
++        self.can_rspfile = False
+         self.process_kwargs(kwargs)
+         self.extra_files = []
+         # Whether to use absolute paths for all files on the commandline
+@@ -1833,7 +1834,7 @@ class CustomTarget(Target):
+                     # Can only add a dependency on an external program which we
+                     # know the absolute path of
+                     self.depend_files.append(File.from_absolute_file(path))
+-                final_cmd += c.get_command()
++                final_cmd.append(c)
+             elif isinstance(c, (BuildTarget, CustomTarget)):
+                 self.dependencies.append(c)
+                 final_cmd.append(c)
+diff --git a/mesonbuild/scripts/meson_exe.py b/mesonbuild/scripts/meson_exe.py
+index 84abfc3..f57cfea 100644
+--- a/mesonbuild/scripts/meson_exe.py
++++ b/mesonbuild/scripts/meson_exe.py
+@@ -17,6 +17,7 @@ import sys
+ import argparse
+ import pickle
+ import platform
++import tempfile
+ import subprocess
+ 
+ from .. import mesonlib
+@@ -41,6 +42,16 @@ def run_with_mono(fname):
+         return True
+     return False
+ 
++def get_exe_cmd_args(exe):
++    if not is_windows() or not exe.can_rspfile:
++        return None, exe.cmd_args
++    import shlex
++    with tempfile.NamedTemporaryFile(dir=exe.workdir, mode='w', suffix='.txt',
++                                     prefix='meson_exe_', delete=False) as f:
++        f.write(' '.join([shlex.quote(arg) for arg in exe.cmd_args]))
++        f.flush()
++    return f, ['@' + os.path.basename(f.name)]
++
+ def run_exe(exe):
+     if exe.fname[0].endswith('.jar'):
+         cmd = ['java', '-jar'] + exe.fname
+@@ -73,8 +84,9 @@ def run_exe(exe):
+             else:
+                 child_env['WINEPATH'] = wine_path
+ 
+-    p = subprocess.Popen(cmd + exe.cmd_args, env=child_env, cwd=exe.workdir,
+-                         close_fds=False,
++    tempf, cmd_args = get_exe_cmd_args(exe)
++    p = subprocess.Popen(cmd + cmd_args, env=child_env,
++                         cwd=exe.workdir, close_fds=False,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE)
+     stdout, stderr = p.communicate()
+@@ -83,6 +95,8 @@ def run_exe(exe):
+             output.write(stdout)
+     if stderr:
+         sys.stderr.buffer.write(stderr)
++    if tempf is not None:
++        os.unlink(tempf.name)
+     return p.returncode
+ 
+ def run(args):
+-- 
+2.18.0.windows.1
+

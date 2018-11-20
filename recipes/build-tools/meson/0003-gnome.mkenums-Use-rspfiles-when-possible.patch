@@ -1,0 +1,42 @@
+From ad81a8a31057e9f8a81b24fde356ed6b527947c0 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Tue, 20 Nov 2018 15:53:27 +0530
+Subject: [PATCH 3/3] gnome.mkenums: Use rspfiles when possible
+
+---
+ mesonbuild/modules/gnome.py | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/mesonbuild/modules/gnome.py b/mesonbuild/modules/gnome.py
+index 7802472..0cba6d9 100644
+--- a/mesonbuild/modules/gnome.py
++++ b/mesonbuild/modules/gnome.py
+@@ -1411,8 +1411,7 @@ G_END_DECLS'''
+ 
+         return ModuleReturnValue([c_file, h_file], [c_file, h_file])
+ 
+-    @staticmethod
+-    def _make_mkenum_custom_target(state, sources, output, cmd, kwargs):
++    def _make_mkenum_custom_target(self, state, sources, output, cmd, kwargs):
+         custom_kwargs = {
+             'input': sources,
+             'output': output,
+@@ -1420,9 +1419,14 @@ G_END_DECLS'''
+             'command': cmd
+         }
+         custom_kwargs.update(kwargs)
+-        return build.CustomTarget(output, state.subdir, state.subproject, custom_kwargs,
++        ct = build.CustomTarget(output, state.subdir, state.subproject, custom_kwargs,
+                                   # https://github.com/mesonbuild/meson/issues/973
+                                   absolute_paths=True)
++        # Use rspfiles on Windows to avoid exceeding the maximum commandline length limit
++        can_rspfile = mesonlib.version_compare(self._get_native_glib_version(state), '>= 1.59.1')
++        if state.build_machine.system == 'windows' and can_rspfile:
++            ct.can_rspfile = True
++        return ct
+ 
+     @permittedKwargs({'sources', 'prefix', 'install_header', 'install_dir', 'stdinc',
+                       'nostdinc', 'internal', 'skip_source', 'valist_marshallers',
+-- 
+2.18.0.windows.1
+

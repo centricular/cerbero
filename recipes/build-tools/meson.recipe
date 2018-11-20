@@ -14,11 +14,10 @@ class Recipe(recipe.Recipe):
     tarball_checksum = 'ef9f14326ec1e30d3ba1a26df0f92826ede5a79255ad723af78a2691c37109fd'
     patches = [
         # https://github.com/mesonbuild/meson/pull/3939
-        'meson/0002-Fix-linking-of-shared-static-libs-with-static-libs.patch',
-        # https://github.com/mesonbuild/meson/pull/4846, in 0.50
-        'meson/0001-find_library-Check-arch-of-libraries-on-Darwin.patch',
-        # https://github.com/mesonbuild/meson/pull/4864, in 0.50
-        'meson/0001-macos-lipo-outputs-aarch64-as-arm64-fix-it.patch'
+        'meson/0001-Fix-linking-of-shared-static-libs-with-static-libs.patch',
+        # TODO
+        'meson/0002-backends-Add-rspfile-support-to-exe-serialization.patch',
+        'meson/0003-gnome.mkenums-Use-rspfiles-when-possible.patch',
     ]
     deps = ['ninja']
 
