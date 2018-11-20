@@ -1,0 +1,48 @@
+From d076f60b2591b6c3d92daf449a179b9e467263c1 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Tue, 20 Nov 2018 14:25:23 +0530
+Subject: [PATCH] glib-mkenums: Support reading @rspfiles for arguments
+
+This is needed on Windows where the argument list can exceed the
+maximum command-line length when lots of sources are passed to
+glib-mkenums.
+---
+ gobject/glib-mkenums.in | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/gobject/glib-mkenums.in b/gobject/glib-mkenums.in
+index 985edd2f7..95324a8a9 100755
+--- a/gobject/glib-mkenums.in
++++ b/gobject/glib-mkenums.in
+@@ -69,6 +69,13 @@ def print_info(msg):
+     print_color(msg, color=Color.GREEN, prefix='INFO')
+ 
+ 
++def get_rspfile_args(rspfile):
++    import shlex
++    with open(rspfile, 'r') as f:
++        cmdline = f.read()
++    return shlex.split(cmdline)
++
++
+ def write_output(output):
+     global output_stream
+     print(output, file=output_stream)
+@@ -328,7 +335,13 @@ parser.add_argument('--version', '-v', default=False, action='store_true', dest=
+                     help='Print version informations')
+ parser.add_argument('args', nargs='*')
+ 
+-options = parser.parse_args()
++# Support reading a rspfile of the form @filename which contains the args passed to us
++if len(sys.argv) == 2 and sys.argv[1].startswith('@'):
++    args = get_rspfile_args(sys.argv[1][1:])
++else:
++    args = sys.argv[1:]
++
++options = parser.parse_args(args)
+ 
+ if options.version:
+     print(VERSION_STR)
+-- 
+2.19.1
+
