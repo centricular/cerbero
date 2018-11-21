@@ -1,15 +1,19 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
 
 class Recipe(recipe.Recipe):
     name = 'librsvg'
     version = '2.40.20'
     licenses = [License.LGPLv2Plus]
     deps = ['libcroco', 'gdk-pixbuf', 'pango', 'cairo']
-    autoreconf = True
-    autoreconf_sh = 'mkdir -p m4 && autoreconf -fiv'
     stype = SourceType.TARBALL
+    btype = BuildType.MESON
     url = 'gnome://'
     tarball_checksum = 'cff4dd3c3b78bfe99d8fcfad3b8ba1eee3289a0823c0e118d78106be6b84c92b'
+    # GTK3 support just builds rsvg-view-3, which is useless for Cerbero
+    meson_options = {'pixbuf-loder': 'disabled', 'gtk3': 'disabled'}
+
+    patches = ['librsvg/0001-WIP-Port-build-system-to-Meson.patch']
 
     files_libs = ['librsvg-2']
     files_bins = ['rsvg-convert']
@@ -19,13 +23,11 @@ class Recipe(recipe.Recipe):
                    'lib/pkgconfig/librsvg-2.0.pc',
                    'lib/librsvg-2.a', 'lib/librsvg-2.la']
     files_typelibs = ['Rsvg-2.0']
-    # GTK3 support just builds rsvg-view-3, which is useless for Cerbero
-    configure_options = ' --disable-pixbuf-loader --without-gtk3 '
 
-    patches = ['librsvg/option-enable-disable-gtk.patch',
-               'librsvg/0001-Use-ACLOCAL_FLAGS.patch',
-               'librsvg/0001-build-Fix-enumtypes-on-MinGW-inside-MSYS-Windows.patch']
-
-    def prepare(self):
-        if self.config.target_platform in [Platform.DARWIN, Platform.IOS]:
-            self.configure_options += ' --disable-Bsymbolic'
+    def post_install (self):
+        deps = ['croco-0.6', 'gdk_pixbuf-2.0', 'pangocairo-1.0', 'pangoft2-1.0',
+                'pango', 'cairo', '-lgdi32', '-msimg32', '-lxml2']
+        lib = LibtoolLibrary('rsvg-2', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=deps)
+        lib.save()
+        super().post_install()

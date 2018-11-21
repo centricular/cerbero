@@ -1,0 +1,339 @@
+From 3cdc3fc6fa177d96dade7651139f19f7cc9eedf2 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Sun, 12 Nov 2017 17:36:57 +0530
+Subject: [PATCH] WIP: Port build system to Meson
+
+WIP port of the 2.40 C library to Meson. Will not be merged to the
+stable branch, only used for setups where Rust is not available as
+a toolchain.
+
+TODO:
+* gtk-doc documentation
+* introspection bindings
+* vala bindings
+* LC_MESSAGES localization
+---
+ gdk-pixbuf-loader/meson.build |   9 ++
+ librsvg.def                   |  51 ++++++++++
+ meson.build                   | 176 ++++++++++++++++++++++++++++++++++
+ meson_options.txt             |   6 ++
+ tests/meson.build             |  19 ++++
+ tools/meson.build             |  10 ++
+ 6 files changed, 271 insertions(+)
+ create mode 100644 gdk-pixbuf-loader/meson.build
+ create mode 100644 librsvg.def
+ create mode 100644 meson.build
+ create mode 100644 meson_options.txt
+ create mode 100644 tests/meson.build
+ create mode 100644 tools/meson.build
+
+diff --git a/gdk-pixbuf-loader/meson.build b/gdk-pixbuf-loader/meson.build
+new file mode 100644
+index 00000000..44da4766
+--- /dev/null
++++ b/gdk-pixbuf-loader/meson.build
+@@ -0,0 +1,9 @@
++gdkpixbuf_loader = library('pixbufloader-svg', 'io-svg.c',
++                           c_args : ['-DGDK_PIXBUF_ENABLE_BACKEND',
++                                     '-DG_LOG_DOMAIN="libpixbufloader-svg"'],
++                           dependencies : librsvg_dep, install : true)
++
++executable('rsvg-loader', 'test.c',
++           link_depends : gdkpixbuf_loader,
++           dependencies : librsvg_dep,
++           install : false)
+diff --git a/librsvg.def b/librsvg.def
+new file mode 100644
+index 00000000..bddec8f9
+--- /dev/null
++++ b/librsvg.def
+@@ -0,0 +1,51 @@
++EXPORTS
++librsvg_major_version DATA
++librsvg_micro_version DATA
++librsvg_minor_version DATA
++librsvg_version DATA
++rsvg_cleanup
++rsvg_css_parse_color
++rsvg_defs_lookup
++rsvg_error_get_type
++rsvg_error_quark
++rsvg_handle_close
++rsvg_handle_flags_get_type
++rsvg_handle_free
++rsvg_handle_get_base_uri
++rsvg_handle_get_desc
++rsvg_handle_get_dimensions
++rsvg_handle_get_dimensions_sub
++rsvg_handle_get_metadata
++rsvg_handle_get_pixbuf
++rsvg_handle_get_pixbuf_sub
++rsvg_handle_get_position_sub
++rsvg_handle_get_title
++rsvg_handle_get_type
++rsvg_handle_has_sub
++rsvg_handle_internal_set_testing
++rsvg_handle_new
++rsvg_handle_new_from_data
++rsvg_handle_new_from_file
++rsvg_handle_new_from_gfile_sync
++rsvg_handle_new_from_stream_sync
++rsvg_handle_new_with_flags
++rsvg_handle_read_stream_sync
++rsvg_handle_render_cairo
++rsvg_handle_render_cairo_sub
++rsvg_handle_resolve_uri
++rsvg_handle_set_base_gfile
++rsvg_handle_set_base_uri
++rsvg_handle_set_dpi
++rsvg_handle_set_dpi_x_y
++rsvg_handle_set_size_callback
++rsvg_handle_write
++rsvg_init
++rsvg_pixbuf_from_data_with_size_data
++rsvg_pixbuf_from_file
++rsvg_pixbuf_from_file_at_max_size
++rsvg_pixbuf_from_file_at_size
++rsvg_pixbuf_from_file_at_zoom
++rsvg_pixbuf_from_file_at_zoom_with_max
++rsvg_set_default_dpi
++rsvg_set_default_dpi_x_y
++rsvg_term
+diff --git a/meson.build b/meson.build
+new file mode 100644
+index 00000000..47c1bdcc
+--- /dev/null
++++ b/meson.build
+@@ -0,0 +1,176 @@
++project('librsvg', 'c',
++  version : '2.40.20',
++  meson_version : '>=0.48')
++
++rsvg_api_major = '2'
++rsvg_api_minor = '0'
++rsvg_api_version = rsvg_api_major + '.' + rsvg_api_minor
++
++rsvg_versions = meson.project_version().split('.')
++
++cc = meson.get_compiler('c')
++host_system = host_machine.system()
++
++datadir_abs = join_paths(get_option('prefix'), get_option('datadir'))
++librsvg_inc_subdir = join_paths('librsvg-' + rsvg_api_version, 'librsvg')
++librsvg_incdir = join_paths(get_option('includedir'), librsvg_inc_subdir)
++
++# For generating config.h
++cdata = configuration_data()
++cdata.set_quoted('VERSION', rsvg_api_version)
++
++glib_req = '>=2.24'
++cairo_req = '>=1.2'
++pango_req = '>=1.38'
++
++glib_dep = [dependency('glib-2.0', version : glib_req),
++            dependency('gio-2.0', version : glib_req)]
++gthread_dep = dependency('gthread-2.0', version : glib_req)
++
++if host_system != 'windows'
++  gio_platform_dep = dependency('gio-unix-2.0', version : glib_req)
++else
++  gio_platform_dep = dependency('gio-windows-2.0', version : glib_req)
++endif
++
++cairo_dep = [dependency('cairo', version : cairo_req),
++             dependency('cairo-png', version : cairo_req)]
++
++pango_dep = [dependency('pangocairo', version : pango_req)]
++
++pangoft2_dep = dependency('pangoft2', version : pango_req,
++                          # Optional on Windows
++                          required : host_system != 'windows')
++cdata.set('HAVE_PANGOFT2', pangoft2_dep.found())
++
++libxml2_dep = dependency('libxml-2.0', version : '>=2.7')
++gtk3_dep = dependency('gtk+-3.0', version : '>=3.10', required : get_option('gtk3'))
++pixbuf_dep = dependency('gdk-pixbuf-2.0', version : '>=2.20', required : get_option('pixbuf-loader'))
++croco_dep = dependency('libcroco-0.6', version : '>=0.6.1')
++libm = cc.find_library('m', required : false)
++libdl = cc.find_library('dl', required : false)
++thread_dep = dependency('threads')
++
++librsvg_deps = [glib_dep, cairo_dep, pango_dep, pangoft2_dep, pixbuf_dep,
++                libxml2_dep, croco_dep, thread_dep, libdl, libm]
++
++cdata.set('HAVE_STRTOK_R', cc.has_function('strtok_r'))
++cdata.set('HAVE_STRINGS_H', cc.has_header('strings.h'))
++
++librsvg_link_args = []
++if cc.has_link_argument('-Wl,-Bsymbolic-functions')
++  librsvg_link_args += ['-Wl,-Bsymbolic-functions']
++endif
++
++# TODO: introspection
++# TODO: vala bindings
++#
++# TODO: LC_MESSAGES
++cdata.set('HAVE_LC_MESSAGES', false)
++configure_file(output : 'config.h',
++               configuration : cdata)
++
++# For generating librsvg.pc
++pcdata = configuration_data()
++pcdata.set('prefix', get_option('prefix'))
++pcdata.set('exec_prefix', get_option('prefix'))
++pcdata.set('libdir', join_paths('${prefix}', get_option('libdir')))
++pcdata.set('includedir', join_paths('${prefix}', get_option('includedir')))
++pcdata.set('VERSION', meson.project_version())
++pcdata.set('RSVG_API_MAJOR_VERSION', rsvg_api_major)
++pcdata.set('RSVG_API_VERSION', rsvg_api_version)
++configure_file(input : 'librsvg.pc.in',
++               output : 'librsvg-@0@.pc'.format(rsvg_api_version),
++               configuration : pcdata,
++               install_dir : join_paths(get_option('prefix'),
++                                        get_option('libdir'),
++                                        'pkgconfig'))
++
++# Install headers
++librsvg_headers = ['rsvg.h', 'rsvg-cairo.h']
++install_headers(librsvg_headers, subdir : librsvg_inc_subdir)
++
++# For generating and installing librsvg-features.h
++ftdata = configuration_data()
++ftdata.set('LIBRSVG_MAJOR_VERSION', rsvg_versions[0])
++ftdata.set('LIBRSVG_MINOR_VERSION', rsvg_versions[1])
++ftdata.set('LIBRSVG_MICRO_VERSION', rsvg_versions[2])
++ftdata.set('PACKAGE_VERSION', meson.project_version())
++configure_file(input : 'librsvg-features.h.in',
++               output : 'librsvg-features.h',
++               configuration : ftdata,
++               install_dir : librsvg_incdir)
++
++# Generate and install enumtypes
++gnome = import('gnome')
++librsvg_enums = gnome.mkenums_simple('librsvg-enum-types',
++                                     sources : librsvg_headers,
++                                     install_dir : librsvg_incdir, install_header: true)
++
++# Build C code
++librsvg_sources = [
++  'librsvg-features.c',
++  'rsvg-css.c',
++  'rsvg-defs.c',
++  'rsvg-image.c',
++  'rsvg-io.c',
++  'rsvg-paint-server.c',
++  'rsvg-path.c',
++  'rsvg-base-file-util.c',
++  'rsvg-filter.c',
++  'rsvg-marker.c',
++  'rsvg-mask.c',
++  'rsvg-shapes.c',
++  'rsvg-structure.c',
++  'rsvg-styles.c',
++  'rsvg-text.c',
++  'rsvg-cond.c',
++  'rsvg-base.c',
++  'rsvg-cairo-draw.c',
++  'rsvg-cairo-render.c',
++  'rsvg-cairo-clip.c',
++  'rsvg.c',
++  'rsvg-gobject.c',
++  'rsvg-file-util.c',
++  'rsvg-size-callback.c',
++  'rsvg-xml.c',
++  librsvg_enums,
++]
++librsvg = library('rsvg-' + rsvg_api_major, librsvg_sources,
++                  dependencies : librsvg_deps,
++                  link_args : librsvg_link_args,
++                  vs_module_defs : 'librsvg.def', install : true,
++                  c_args : ['-DG_LOG_DOMAIN="@0@"'.format(meson.project_name()),
++                            '-DLIBRSVG_DATADIR="@0@"'.format(datadir_abs),
++                            '-DSRCDIR="@0@"'.format(meson.source_root()),
++                            '-DRSVG_DISABLE_DEPRECATION_WARNINGS',
++                            '-DRSVG_COMPILATION'])
++# For usage as a subproject
++librsvg_dep = declare_dependency(link_with : librsvg,
++                                 dependencies : librsvg_deps,
++                                 sources : librsvg_enums[1],
++                                 include_directories : include_directories('.'))
++
++install_man('rsvg-convert.1')
++
++executable('rsvg-convert', 'rsvg-convert.c', 'rsvg-size-callback.c',
++           dependencies : [librsvg_dep, gio_platform_dep],
++           c_args : ['-DLIBRSVG_DATADIR="@0@"'.format(datadir_abs)],
++           install : true)
++
++if gtk3_dep.found()
++  executable('rsvg-view-3', 'test-display.c',
++             dependencies : [librsvg_dep, gthread_dep, gtk3_dep],
++             c_args : ['-DLIBRSVG_DATADIR="@0@"'.format(datadir_abs)],
++             install : true)
++endif
++
++if pixbuf_dep.found()
++  subdir('gdk-pixbuf-loader')
++endif
++if get_option('tests')
++  subdir('tests')
++  subdir('tools')
++endif
++# TODO: gtk-doc
++#subdir('doc')
+diff --git a/meson_options.txt b/meson_options.txt
+new file mode 100644
+index 00000000..a37420c3
+--- /dev/null
++++ b/meson_options.txt
+@@ -0,0 +1,6 @@
++option('tests', type : 'boolean', value : true,
++       description : 'build miscellaneous testing tools')
++option('gtk3', type : 'feature', value : 'auto',
++       description : 'build GdkPixbuf loader')
++option('pixbuf-loader', type : 'feature', value : 'auto',
++       description : 'build GdkPixbuf loader')
+diff --git a/tests/meson.build b/tests/meson.build
+new file mode 100644
+index 00000000..9888e9ff
+--- /dev/null
++++ b/tests/meson.build
+@@ -0,0 +1,19 @@
++test_env = [
++  'G_TEST_SRCDIR=' + meson.current_source_dir(),
++  'G_TEST_BUILDDIR=' + meson.current_build_dir(),
++  'G_DEBUG=gc-friendly',
++  'MALLOC_CHECK_=2',
++]
++
++test_common_src = 'test-utils.c'
++
++test_progs = ['rsvg-test', 'crash', 'styles']
++# styles
++
++foreach t : test_progs
++  test_src = t + '.c'
++  e = executable(t, test_src, test_common_src,
++                 dependencies : librsvg_dep,
++                 install : false)
++  test(t, e, env : test_env)
++endforeach
+diff --git a/tools/meson.build b/tools/meson.build
+new file mode 100644
+index 00000000..055a58f0
+--- /dev/null
++++ b/tools/meson.build
+@@ -0,0 +1,10 @@
++librsvg_tools_main = static_library('rsvg_tools_main', 'rsvg-tools-main.c',
++                                    dependencies : librsvg_dep)
++
++executable('test-performance', 'test-performance.c',
++           link_with : librsvg_tools_main,
++           dependencies : librsvg_dep)
++
++executable('rsvg-dimensions', 'rsvg-dimensions.c',
++           link_with : librsvg_tools_main,
++           dependencies : librsvg_dep)
+-- 
+2.19.1
+
