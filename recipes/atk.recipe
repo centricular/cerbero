@@ -16,6 +16,8 @@ class Recipe(recipe.Recipe):
     files_libs = ['libatk-1.0']
     files_devel = ['include/atk-1.0', 'lib/pkgconfig/atk.pc']
 
+    patches = [name + '/0001-meson-osx-compat-fixes.patch']
+
     def post_install(self):
         libtool_la = LibtoolLibrary('epoxy', None, None, None,
                 self.config.libdir, self.config.target_platform)
