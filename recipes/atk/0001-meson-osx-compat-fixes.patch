@@ -1,0 +1,66 @@
+From f8951762ff0f2a2f1185ea66986fe11a98feba8e Mon Sep 17 00:00:00 2001
+From: Jan Tojnar <jtojnar@gmail.com>
+Date: Wed, 14 Mar 2018 14:03:03 +0100
+Subject: [PATCH 1/2] build: fix macOS common_ldflags
+
+https://bugzilla.gnome.org/show_bug.cgi?id=794326
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 59abf5e..1475890 100644
+--- a/meson.build
++++ b/meson.build
+@@ -75,7 +75,7 @@ endif
+ 
+ # Maintain compatibility with autotools on macOS
+ if host_machine.system() == 'darwin'
+-  common_ldflags += [ '-compatibility_version 1', '-current_version 1.0', ]
++  common_ldflags += [ '-compatibility_version', '1', '-current_version', '1.0', ]
+ endif
+ 
+ # Functions
+-- 
+2.19.1
+
+
+From aedcb50c71395f3c8d700b907517a43e35c79ac3 Mon Sep 17 00:00:00 2001
+From: Christoph Reiter <reiter.christoph@gmail.com>
+Date: Fri, 16 Nov 2018 15:14:26 +0100
+Subject: [PATCH 2/2] meson: use an autotools compatible
+ compatibility_version/current_version on macOS. Fixes #6
+
+Use the same versioning scheme as libtool did with the autotools build. Otherwise switching
+atk from meson to autotools makes all library linking to it fail since the version is too low.
+---
+ meson.build | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 1475890..2a13c9f 100644
+--- a/meson.build
++++ b/meson.build
+@@ -36,7 +36,9 @@ atk_conf.set_quoted('GETTEXT_PACKAGE', 'atk10')
+ 
+ # Maintain version scheme with libtool
+ atk_soversion = 0
+-atk_libversion = '@0@.@1@.@2@'.format(atk_soversion, (atk_binary_age - atk_interface_age), atk_interface_age)
++current = atk_binary_age - atk_interface_age
++atk_libversion = '@0@.@1@.@2@'.format(atk_soversion, current, atk_interface_age)
++darwin_versions = ['@0@'.format(current + 1), '@0@.@1@'.format(current + 1, atk_interface_age)]
+ 
+ add_project_arguments([ '-DG_DISABLE_SINGLE_INCLUDES', '-DATK_DISABLE_SINGLE_INCLUDES' ], language: 'c')
+ 
+@@ -75,7 +77,7 @@ endif
+ 
+ # Maintain compatibility with autotools on macOS
+ if host_machine.system() == 'darwin'
+-  common_ldflags += [ '-compatibility_version', '1', '-current_version', '1.0', ]
++  common_ldflags += [ '-compatibility_version', darwin_versions[0], '-current_version', darwin_versions[1]]
+ endif
+ 
+ # Functions
+-- 
+2.19.1
+
