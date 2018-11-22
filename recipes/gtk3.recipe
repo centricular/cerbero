@@ -3,13 +3,11 @@
 class Recipe(recipe.Recipe):
     name = 'gtk+'
     version = '3.24.1'
-    stype = SourceType.GIT
-    remotes = {'origin': 'https://gitlab.gnome.org/GNOME/gtk.git'}
-    commit = 'origin/wip/nirbheek/gtk-3-24-meson'
-    #url = 'gnome://'
-    #tarball_checksum = '68387be307b99aadcdc653561d7a2a7f0113b93561fb18ded7075ec9ced5b02f'
+    stype = SourceType.TARBALL
+    url = 'gnome://'
+    tarball_checksum = '68387be307b99aadcdc653561d7a2a7f0113b93561fb18ded7075ec9ced5b02f'
     licenses = [License.LGPLv2Plus]
-    btype = BuildType.MESON
+    btype = BuildType.AUTOTOOLS
 
     deps = ['glib', 'gdk-pixbuf', 'libepoxy', 'pango', 'harfbuzz', 'atk', 'cairo']
 
@@ -25,6 +23,11 @@ class Recipe(recipe.Recipe):
         Platform.LINUX: ['lib/pkgconfig/gtk+-wayland-3.0.pc', 'lib/pkgconfig/gtk+-x11-3.0.pc'],
         Platform.DARWIN: ['lib/pkgconfig/gtk+-quartz-3.0.pc'],
     }
+    configure_options = '--disable-introspection'
 
     # FIXME: Dangerous, should add a way to do this selectively for a list of pkg-config files
     use_system_libs = True
+
+    def prepare(self):
+        if self.config.target_platform == Platform.DARWIN:
+            self.configure_options += ' --disable-x11-backend --enable-quartz-backend'
