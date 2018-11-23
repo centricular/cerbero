@@ -1,5 +1,5 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
-
+import shutil
 from cerbero.ide.xcode.fwlib import DynamicFrameworkLibrary
 
 class Recipe(recipe.Recipe):
@@ -10,9 +10,16 @@ class Recipe(recipe.Recipe):
     btype = BuildType.CUSTOM
     deps = ['gstreamer-1.0', 'gst-plugins-base-1.0', 'gst-plugins-bad-1.0']
 
+    files_bins = ['pkg-config']
     files_library = ['lib/GStreamer']
 
     def install(self):
+        # copy the build-tool pkg-config into the prefix so it's included in
+        # the Windows binary release
+        pkgconfig = os.path.join(self.config.build_tools_prefix, 'bin', 'pkg-config')
+        bindir = os.path.join(self.config.prefix, 'bin')
+        shutil.copy(pkgconfig, bindir)
+        # Create framework
         install_name = os.path.join(self.config.prefix, 'lib', 'GStreamer')
         libs = [ # GStreamer core
                 'gstreamer-1.0', 'gstreamer-base-1.0',
