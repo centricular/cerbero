@@ -1,0 +1,17 @@
+# vi:si:et:sw=4:sts=4:ts=4:syntax=python:ft=python
+# -*- Mode: Python -*-
+
+
+class Package(custom.GStreamer, package.Package):
+
+    name = 'gstreamer-1.0-gtk'
+    shortdesc = 'GStreamer 1.0 plugins for GTK+ apps'
+    longdesc = 'GStreamer 1.0 plugins for GTK+ apps'
+    uuid = 'd0958750-ef48-11e8-a8bc-001b41a4d986'
+    deps = ['gstreamer-1.0-core']
+
+    files = ['atk:libs', 'libepoxy:libs', 'harfbuzz:bins', 'librsvg:bins:loader',
+             'gdk-pixbuf:misc', 'gtk+:libs:bins', 'adwaita-icon-theme:misc',
+             'hicolor-icon-theme:misc',
+             'gst-plugins-good-1.0:plugins_gtk']
+    files_devel = ['gst-plugins-good-1.0:plugins_gtk_devel']
