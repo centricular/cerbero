@@ -1,12 +1,16 @@
 # -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+from cerbero.tools.libtool import LibtoolLibrary
 
 class Recipe(recipe.Recipe):
     name = 'libcroco'
     version = '0.6.12'
     licenses = [License.LGPLv2_1Plus]
     stype = SourceType.TARBALL
+    btype = BuildType.MESON
     url = 'gnome://'
     tarball_checksum = 'ddc4b5546c9fb4280a5017e2707fbd4839034ed1aba5b7d4372212f34f84f860'
+    patches = [name + '/0001-Add-a-meson-build-system.patch']
+
     deps = ['libxml2', 'glib', 'gdk-pixbuf']
 
     files_libs = ['libcroco-0.6']
@@ -16,4 +20,11 @@ class Recipe(recipe.Recipe):
 
     def prepare(self):
         if self.config.target_platform in [Platform.DARWIN, Platform.IOS]:
-            self.configure_options += ' --disable-Bsymbolic'
+            self.meson_options['bsymbolic_functions'] = 'false'
+
+    def post_install (self):
+        deps = ['glib-2.0', 'xml2', 'intl', 'z']
+        lib = LibtoolLibrary('croco-0.6', None, None, None, self.config.libdir,
+                self.config.target_platform, deps=deps)
+        lib.save()
+        super().post_install()
