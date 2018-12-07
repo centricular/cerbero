@@ -340,7 +340,7 @@ SOFTWARE LICENSE COMPLIANCE.\n\n'''
             if not os.path.isfile(pcpath):
                 arch = self.config.target_arch
                 # XXX: make this fatal?
-                m.warning('{} pkg-config file {!r} not found'.format(arch, pcpath))
+                #m.warning('{} pkg-config file {!r} not found'.format(arch, pcpath))
                 continue
 
             deps = self._get_la_deps_from_pc(laname, pcname, env)
