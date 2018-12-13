@@ -13,7 +13,9 @@ class Recipe(recipe.Recipe):
     licenses = [{License.LibPNG: ['LICENSE']}]
     deps = ['zlib']
     patches = [name + '/0001-neon-fix-function-export-names-for-iOS-armv7.patch',
-               name + '/0001-Add-meson-build-files.patch',]
+               name + '/0001-Add-meson-build-files.patch',
+               name + '/0001-Add-an-option-to-enable-SIMD-optimizations.patch']
+    meson_options = {'hardware-optimizations': 'true'}
 
     files_libs = ['libpng16']
     files_devel = ['include/libpng16', 'lib/pkgconfig/libpng.pc', 'lib/pkgconfig/libpng16.pc']
@@ -24,3 +26,4 @@ class Recipe(recipe.Recipe):
         lib = LibtoolLibrary('png16', None, None, None, self.config.libdir,
                 self.config.target_platform, deps=['z'])
         lib.save()
+        super().post_install()

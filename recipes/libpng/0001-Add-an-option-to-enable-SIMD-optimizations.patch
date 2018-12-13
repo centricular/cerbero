@@ -1,0 +1,109 @@
+From 55735ac2df865392921bc4e1c0c95c3359fae13b Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Wed, 12 Dec 2018 16:16:39 +0530
+Subject: [PATCH] Add an option to enable SIMD optimizations
+
+Only tested on x86 and x86_64
+---
+ meson.build       | 74 +++++++++++++++++++++++++++++++++++------------
+ meson_options.txt |  1 +
+ 2 files changed, 56 insertions(+), 19 deletions(-)
+ create mode 100644 meson_options.txt
+
+diff --git a/meson.build b/meson.build
+index c32dbba..c108356 100644
+--- a/meson.build
++++ b/meson.build
+@@ -24,27 +24,63 @@ if host_machine.system() == 'windows'
+ endif
+ 
+ libpng_deps = [
+-        zlib_dep,
+-        cc.find_library('m', required : false),
++  zlib_dep,
++  cc.find_library('m', required : false),
+ ]
+ 
+-libpng = library(png_libname, [
+-        'png.c',
+-        'pngerror.c',
+-        'pngget.c',
+-        'pngmem.c',
+-        'pngpread.c',
+-        'pngread.c',
+-        'pngrio.c',
+-        'pngrtran.c',
+-        'pngrutil.c',
+-        'pngset.c',
+-        'pngtrans.c',
+-        'pngwio.c',
+-        'pngwrite.c',
+-        'pngwtran.c',
+-        'pngwutil.c',
+-    ],
++libpng_sources = [
++  'png.c',
++  'pngerror.c',
++  'pngget.c',
++  'pngmem.c',
++  'pngpread.c',
++  'pngread.c',
++  'pngrio.c',
++  'pngrtran.c',
++  'pngrutil.c',
++  'pngset.c',
++  'pngtrans.c',
++  'pngwio.c',
++  'pngwrite.c',
++  'pngwtran.c',
++  'pngwutil.c',
++]
++
++opt_args = []
++opt_sources = []
++if get_option('hardware-optimizations')
++  arch = host_machine.cpu_family()
++  simd = ''
++  if ['x86', 'x86_64'].contains(arch)
++    simd = 'SSE2'
++    opt_sources = ['intel/intel_init.c', 'intel/filter_sse2_intrinsics.c']
++    opt_args = ['-DPNG_INTEL_SSE_OPT=1']
++  elif ['aarch64', 'arm'].contains(arch) and cc.get_id() != 'msvc'
++    simd = 'NEON'
++    opt_sources = ['arm/arm_init.c', 'arm/filter_neon.S', 'arm/filter_neon_intrinsics.c']
++    if arch == 'aarch64'
++      opt_args = ['-DPNG_ARM_NEON_OPT=1']
++    else
++      opt_args = ['-DPNG_ARM_NEON_CHECK_SUPPORTED=1']
++    endif
++  elif arch.startswith('mips')
++    simd = 'MSA'
++    opt_sources = ['mips/mips_init.c', 'mips/filter_msa_intrinsics.c']
++    opt_args = ['-DPNG_MIPS_MSA_CHECK_SUPPORTED=1']
++  elif arch.startswith('ppc')
++    simd = 'VSX'
++    opt_sources = ['powerpc/powerpc_init.c', 'powerpc/filter_vsx_intrinsics.c']
++    opt_args = ['-DPNG_POWERPC_VSX_CHECK_SUPPORTED=1']
++  endif
++  if simd != ''
++    message('Enabled @0@ hardware optimizations'.format(simd))
++  endif
++endif
++libpng_sources += opt_sources
++c_args += opt_args
++
++
++libpng = library(png_libname, libpng_sources,
+     version : png_libversion,
+     dependencies : libpng_deps,
+     c_args: c_args,
+diff --git a/meson_options.txt b/meson_options.txt
+new file mode 100644
+index 0000000..99e1b2c
+--- /dev/null
++++ b/meson_options.txt
+@@ -0,0 +1 @@
++option('hardware-optimizations', type : 'boolean', value : false)
+-- 
+2.18.0.windows.1
+
