@@ -1,0 +1,40 @@
+From 33547e2903c7b3c4b3ed89f913c4097fc5aa669b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Sebastian=20Dr=C3=B6ge?= <sebastian@centricular.com>
+Date: Thu, 10 Jan 2019 21:18:49 +0200
+Subject: [PATCH] Fix win32 symbol export files syntax
+
+---
+ lib/libexpat.def  | 4 ++--
+ lib/libexpatw.def | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/lib/libexpat.def b/lib/libexpat.def
+index d08f5b7..16faf59 100644
+--- a/lib/libexpat.def
++++ b/lib/libexpat.def
+@@ -73,6 +73,6 @@ EXPORTS
+   XML_GetParsingStatus @65
+ ; added with version 2.1.1
+ ; XML_GetAttributeInfo @66
+-  XML_SetHashSalt @67@
++  XML_SetHashSalt @67
+ ; added with version 2.2.5
+-  _INTERNAL_trim_to_complete_utf8_characters @68@
+\ No newline at end of file
++  _INTERNAL_trim_to_complete_utf8_characters @68
+diff --git a/lib/libexpatw.def b/lib/libexpatw.def
+index 928e01b..16faf59 100644
+--- a/lib/libexpatw.def
++++ b/lib/libexpatw.def
+@@ -73,6 +73,6 @@ EXPORTS
+   XML_GetParsingStatus @65
+ ; added with version 2.1.1
+ ; XML_GetAttributeInfo @66
+-  XML_SetHashSalt @67@
++  XML_SetHashSalt @67
+ ; added with version 2.2.5
+-  _INTERNAL_trim_to_complete_utf8_characters @68@
++  _INTERNAL_trim_to_complete_utf8_characters @68
+-- 
+2.20.1
+
