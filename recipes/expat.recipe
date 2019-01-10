@@ -14,7 +14,8 @@ class Recipe(recipe.Recipe):
     files_libs = ['libexpat']
     files_devel = ['include/expat.h', 'include/expat_external.h', 'lib/pkgconfig/expat.pc']
 
-    patches = [name + '/0001-Add-meson-build-files.patch']
+    patches = [name + '/0001-Add-meson-build-files.patch',
+               name + '/0002-Fix-win32-symbol-export-files-syntax.patch']
 
     def post_install (self):
         lib = LibtoolLibrary('expat', None, None, None, self.config.libdir,
