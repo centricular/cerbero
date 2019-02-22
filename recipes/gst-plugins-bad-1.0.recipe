@@ -406,8 +406,6 @@ class Recipe(custom.GStreamer):
             # built with MSVC, it uses Meson but it doesn't build:
             # https://gitlab.freedesktop.org/pulseaudio/webrtc-audio-processing/issues/2
             self.disable_plugin('webrtcdsp', 'effects', dep='webrtc-audio-processing')
-            # librsvg pulls in gdk-pixbuf, which must be built with MSVC
-            self.disable_plugin('rsvg', 'codecs', dep='librsvg')
 
         # Enable hardware codecs if variants are enabled
         self.enable_plugin('nvenc', 'codecs', 'nvcodec', option='nvenc')
