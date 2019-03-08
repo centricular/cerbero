@@ -505,8 +505,6 @@ endian = '{endian}'
 c = {CC}
 cpp = {CXX}
 ar = {AR}
-strip = {STRIP}
-windres = {WINDRES}
 pkgconfig = 'pkg-config'
 {extra_binaries}
 '''
@@ -625,17 +623,25 @@ class Meson (Build, ModifyEnvBase) :
         return str(qmake.parent / moc_name)
 
     def _write_meson_cross_file(self):
+        # We do not use cmake dependency files, speed up the build by disabling it
+        cross_binaries = {'cmake': ['false']}
+
         # Take cross toolchain from _old_env because we removed them from the
         # env so meson doesn't detect them as the native toolchain.
         # Same for *FLAGS below.
-        cc = os.environ['CC'].split()
-        cxx = os.environ['CXX'].split()
-        ar = os.environ['AR'].split()
-        strip = os.environ.get('STRIP', '').split()
-        windres = os.environ.get('WINDRES', '').split()
+        if self.using_msvc():
+            cc = ['cl']
+            cxx = ['cl']
+            ar = ['lib']
+        else:
+            cc = os.environ['CC'].split()
+            cxx = os.environ['CXX'].split()
+            ar = os.environ['AR'].split()
 
-        # We do not use cmake dependency files, speed up the build by disabling it
-        cross_binaries = {'cmake': ['false']}
+        if 'STRIP' in os.environ:
+            cross_binaries['strip'] = os.environ['STRIP'].split()
+        if 'WINDRES' in os.environ:
+            cross_binaries['windres'] = os.environ['WINDRES'].split()
         if 'OBJC' in os.environ:
             cross_binaries['objc'] = os.environ['OBJC'].split()
         if 'OBJCXX' in os.environ:
@@ -689,8 +695,6 @@ class Meson (Build, ModifyEnvBase) :
                 CC=cc,
                 CXX=cxx,
                 AR=ar,
-                STRIP=strip,
-                WINDRES=windres,
                 extra_binaries=extra_binaries,
                 extra_properties=extra_properties)
         with open(cross_file, 'w') as f:
@@ -762,10 +766,8 @@ class Meson (Build, ModifyEnvBase) :
         if self.config.cross_compiling():
             f = self._write_meson_cross_file()
             meson_cmd += ' --cross-file=' + f
-        else:
-            # We only use native files when not cross-compiling
-            f = self._write_meson_native_file()
-            meson_cmd += ' --native-file=' + f
+        f = self._write_meson_native_file()
+        meson_cmd += ' --native-file=' + f
 
         if self.config.cross_compiling() or self.using_msvc():
             # We export the cross toolchain with env vars, but Meson picks the
