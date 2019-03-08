@@ -71,7 +71,7 @@ def append_path(var, path, sep=';'):
     var += path
     return var
 
-def get_vcvarsall_arg(arch, target_arch):
+def get_vcvarsall_arch(arch, target_arch):
     if target_arch == Architecture.X86:
         # If arch is x86_64, this will cause the WOW64 version of MSVC to be
         # used, which is how most people compile 32-bit apps on 64-bit.
@@ -97,6 +97,12 @@ def get_vcvarsall_arg(arch, target_arch):
             return 'arm'
     raise FatalError('Unsupported arch/target_arch: {0}/{1}'.format(arch, target_arch))
 
+def get_vcvarsall_arg(arch, target_arch, uwp):
+    arch = get_vcvarsall_arch(arch, target_arch)
+    if not uwp:
+        return arch
+    return arch + ' uwp'
+
 def run_and_get_env(cmd):
     env = os.environ.copy()
     env['VSCMD_ARG_no_logo'] = '1'
@@ -115,12 +121,12 @@ def get_envvar_msvc_values(msvc, nomsvc, sep=';'):
     return msvc[0:index]
 
 @lru_cache()
-def get_msvc_env(arch, target_arch, version=None):
+def get_msvc_env(arch, target_arch, uwp, version=None):
     ret_env = {}
     vcvarsall, vsver = get_vcvarsall(version)
 
     without_msvc = run_and_get_env('set')
-    arg = get_vcvarsall_arg(arch, target_arch)
+    arg = get_vcvarsall_arg(arch, target_arch, uwp)
     vcvars_env_cmd = '"{0}" {1} & {2}'.format(vcvarsall, arg, 'set')
     with_msvc = run_and_get_env(vcvars_env_cmd)
 
