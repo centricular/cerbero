@@ -716,6 +716,13 @@ class Meson (Build, ModifyEnvBase) :
             native_binaries['qmake'] = [self.config.qt5_qmake_path]
             native_binaries['moc'] = [self._get_moc_path(self.config.qt5_qmake_path)]
 
+        # FIXME: This is a massive hack. Meson should either not require
+        # a native compiler, or we need to get this from windows.config
+        if self.config.cross_compiling() and self.using_msvc():
+            cmd = lambda x: '{}/bin/{}-{}'.format(self.config.toolchain_prefix, self.config.host, x)
+            native_binaries['c'] = [cmd('gcc')]
+            native_binaries['cpp'] = [cmd('g++')]
+
         extra_binaries = ''
         for k, v in native_binaries.items():
             extra_binaries += '{} = {}\n'.format(k, str(v))
