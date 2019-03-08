@@ -43,7 +43,7 @@ class Recipe(recipe.Recipe):
             if self.config.target_platform == Platform.IOS:
                 if 'GAS' in os.environ:
                     self.set_env('AS', os.environ['GAS'])
-            else:
+            elif 'CC' in os.environ:
                 self.set_env('AS', os.environ['CC'])
 
         libavextraconf = ''

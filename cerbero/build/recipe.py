@@ -548,6 +548,8 @@ SOFTWARE LICENSE COMPLIANCE.\n\n'''
         if output_dir is None:
             output_dir = os.path.join(self.config.prefix,
                                       'lib' + self.config.lib_suffix)
+        if self.using_uwp():
+            return
         # Generate a GNU import library or an MSVC import library
         genlib = GenGnuLib() if self.using_msvc() else GenLib()
         # Generate the .dll.a or .lib file as needed
