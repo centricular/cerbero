@@ -187,8 +187,8 @@ class WindowsBootstrapper(BootstrapperBase):
         # to get some include dirs (which doesn't looks like a good idea).
         # If we only have the host-prefixed cpp, this problem is gone.
         if (self.msys_mingw_bindir / 'cpp.exe').is_file():
-            shutil.move(self.msys_mingw_bindir / 'cpp.exe',
-                        self.msys_mingw_bindir / 'cpp.exe.bck')
+            shutil.move(str(self.msys_mingw_bindir / 'cpp.exe'),
+                        str(self.msys_mingw_bindir / 'cpp.exe.bck'))
 
     def add_non_prefixed_strings(self):
         # libtool m4 macros uses non-prefixed 'strings' command. We need to
